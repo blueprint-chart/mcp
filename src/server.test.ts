@@ -56,4 +56,13 @@ describe('server', () => {
     const first = r.contents[0] as { uri: string, mimeType?: string, text?: string }
     expect(first.text).toMatch(/.{50,}/)
   })
+
+  it('exposes bpc://samples/<id> with .bpc content', async () => {
+    const { client } = await connectInMemory()
+    const list = await client.listResources()
+    const sample = list.resources.find(r => r.uri.startsWith('bpc://samples/'))!
+    const r = await client.readResource({ uri: sample.uri })
+    const first = r.contents[0] as { text?: string, mimeType?: string }
+    expect(first.text).toMatch(/chart\s+\w/)
+  })
 })

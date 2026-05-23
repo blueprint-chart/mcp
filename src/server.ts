@@ -9,7 +9,7 @@ import { validateDsl, ValidateInputSchema } from './tools/validate'
 import { inspectDsl, InspectInputSchema } from './tools/inspect'
 import { recommendChartType, RecommendInputSchema } from './tools/recommend'
 import { renderTool, RenderInputSchema } from './tools/render'
-import { listAllResources, readResource } from './resources/docsReader'
+import { listResources, readResource } from './resources/index'
 import { zodToJsonSchema } from './lib/zodToJsonSchema'
 import type { ToolResult } from './errors'
 
@@ -85,7 +85,7 @@ export function createServer(): Server {
   })
 
   server.setRequestHandler(ListResourcesRequestSchema, async () => ({
-    resources: listAllResources(),
+    resources: listResources(),
   }))
 
   server.setRequestHandler(ReadResourceRequestSchema, async (req) => {

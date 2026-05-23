@@ -1,6 +1,6 @@
 import { getDoc, listDocs, type DocGroup, type DocEntry } from '@blueprint-chart/docs'
 
-interface UriResource {
+export interface UriResource {
   uri: string
   name: string
   description?: string
