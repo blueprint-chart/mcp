@@ -1,0 +1,53 @@
+{
+  "name": "@blueprint-chart/mcp",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server for authoring Blueprint Chart .bpc files with LLMs.",
+  "license": "MIT",
+  "author": "pirhoo",
+  "type": "module",
+  "homepage": "https://github.com/blueprint-chart/blueprint-chart-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blueprint-chart/blueprint-chart-mcp.git"
+  },
+  "bin": {
+    "blueprint-chart-mcp": "./bin/blueprint-chart-mcp.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "bin", "README.md", "LICENSE"],
+  "publishConfig": { "access": "public", "provenance": true },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:update-golden": "UPDATE_GOLDEN=1 vitest run test/golden",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@blueprint-chart/lib": "0.1.19",
+    "@blueprint-chart/docs": "0.1.19",
+    "@napi-rs/canvas": "^0.1.71",
+    "@resvg/resvg-js": "^2.6.2",
+    "jsdom": "^26.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.18.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.4"
+  },
+  "engines": { "node": ">=22" }
+}
