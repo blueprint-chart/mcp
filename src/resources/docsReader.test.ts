@@ -18,4 +18,12 @@ describe('docsReader', () => {
   it('throws on unknown URI', () => {
     expect(() => readResource('bpc://handbook/does-not-exist')).toThrow()
   })
+
+  it('exposes bpc://grammar as an aggregate of reference/dsl pages', () => {
+    const list = listAllResources()
+    expect(list.some(r => r.uri === 'bpc://grammar')).toBe(true)
+
+    const doc = readResource('bpc://grammar')
+    expect(doc.text.length).toBeGreaterThan(500)
+  })
 })
