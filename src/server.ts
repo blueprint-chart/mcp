@@ -1,6 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import {
   CallToolRequestSchema,
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
@@ -10,6 +12,7 @@ import { inspectDsl, InspectInputSchema } from './tools/inspect'
 import { recommendChartType, RecommendInputSchema } from './tools/recommend'
 import { renderTool, RenderInputSchema } from './tools/render'
 import { listResources, readResource } from './resources/index'
+import { authorChartPrompt } from './prompts/authorChart'
 import { zodToJsonSchema } from './lib/zodToJsonSchema'
 import type { ToolResult } from './errors'
 
@@ -92,6 +95,25 @@ export function createServer(): Server {
     const { uri } = req.params
     const doc = readResource(uri)
     return { contents: [{ uri: doc.uri, mimeType: doc.mimeType, text: doc.text }] }
+  })
+
+  const PROMPTS = {
+    author_chart: authorChartPrompt(),
+  }
+
+  server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+    prompts: Object.entries(PROMPTS).map(([name, p]) => ({
+      name,
+      description: p.description,
+    })),
+  }))
+
+  server.setRequestHandler(GetPromptRequestSchema, async (req) => {
+    const prompt = PROMPTS[req.params.name as keyof typeof PROMPTS]
+    if (!prompt) {
+      throw new Error(`Unknown prompt: ${req.params.name}`)
+    }
+    return prompt
   })
 
   return server

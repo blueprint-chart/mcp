@@ -65,4 +65,13 @@ describe('server', () => {
     const first = r.contents[0] as { text?: string, mimeType?: string }
     expect(first.text).toMatch(/chart\s+\w/)
   })
+
+  it('exposes author_chart prompt', async () => {
+    const { client } = await connectInMemory()
+    const prompts = await client.listPrompts()
+    expect(prompts.prompts.some(p => p.name === 'author_chart')).toBe(true)
+
+    const got = await client.getPrompt({ name: 'author_chart' })
+    expect(got.messages.length).toBeGreaterThan(0)
+  })
 })
