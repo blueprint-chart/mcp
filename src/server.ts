@@ -1,12 +1,15 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import {
   CallToolRequestSchema,
+  ListResourcesRequestSchema,
   ListToolsRequestSchema,
+  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import { validateDsl, ValidateInputSchema } from './tools/validate'
 import { inspectDsl, InspectInputSchema } from './tools/inspect'
 import { recommendChartType, RecommendInputSchema } from './tools/recommend'
 import { renderTool, RenderInputSchema } from './tools/render'
+import { listAllResources, readResource } from './resources/docsReader'
 import { zodToJsonSchema } from './lib/zodToJsonSchema'
 import type { ToolResult } from './errors'
 
@@ -79,6 +82,16 @@ export function createServer(): Server {
     }
     const result = await tool.handler(req.params.arguments ?? {})
     return formatToolResult(result)
+  })
+
+  server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+    resources: listAllResources(),
+  }))
+
+  server.setRequestHandler(ReadResourceRequestSchema, async (req) => {
+    const { uri } = req.params
+    const doc = readResource(uri)
+    return { contents: [{ uri: doc.uri, mimeType: doc.mimeType, text: doc.text }] }
   })
 
   return server

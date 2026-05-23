@@ -37,4 +37,23 @@ describe('server', () => {
     const text = content?.[0]?.text ?? ''
     expect(text).toMatch(/E_PARSE/)
   })
+
+  it('lists at least 30 resources across 5 URI families', async () => {
+    const { client } = await connectInMemory()
+    const r = await client.listResources()
+    expect(r.resources.length).toBeGreaterThanOrEqual(30)
+    const prefixes = new Set(r.resources.map(rs => rs.uri.split('/').slice(0, 3).join('/')))
+    expect(prefixes.has('bpc://handbook')).toBe(true)
+    expect(prefixes.has('bpc://guide')).toBe(true)
+    expect(prefixes.has('bpc://chart-types')).toBe(true)
+  })
+
+  it('reads a handbook resource', async () => {
+    const { client } = await connectInMemory()
+    const list = await client.listResources()
+    const handbook = list.resources.find(r => r.uri.startsWith('bpc://handbook/'))!
+    const r = await client.readResource({ uri: handbook.uri })
+    const first = r.contents[0] as { uri: string, mimeType?: string, text?: string }
+    expect(first.text).toMatch(/.{50,}/)
+  })
 })
