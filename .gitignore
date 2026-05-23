@@ -1,3 +1,7 @@
 .claude
 .claude-flow
 docs/superpowers
+node_modules
+dist
+coverage
+.DS_Store
