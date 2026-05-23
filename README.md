@@ -54,6 +54,172 @@ claude mcp add blueprint-chart -- npx -y @blueprint-chart/mcp
 
 - `author_chart` — primes the LLM end-to-end (read → write → validate → render → iterate)
 
+## Examples
+
+### Quickstart with Claude
+
+Once the MCP is connected, ask Claude to make a chart:
+
+> **You:** Make a horizontal bar chart of English letter frequencies — top 10, highlight E.
+>
+> **Claude:** *(reads `bpc://grammar`, `bpc://handbook/choosing`, `bpc://samples/letter-frequency`, writes the `.bpc`, calls `validate_dsl` to confirm it parses, calls `render` with `format: 'png'` and shows you the image and the source)*
+>
+> Here's the chart:
+>
+> ![image]
+>
+> ```
+> chart bar-horizontal {
+>   title = "E is the most frequent letter in English"
+>   sort = descending
+>   valueLabels = true
+>   highlight "E"
+>   data { "E" = 12.70; "T" = 9.06; "A" = 8.17; ... }
+> }
+> ```
+
+The MCP grounds Claude in real dataviz pedagogy (the handbook) before it writes a single line of DSL, then closes the loop with deterministic parse + render feedback.
+
+### What `.bpc` looks like
+
+```text
+chart bar-vertical {
+  title = "E is the most frequent letter in English"
+  description = "How often each letter appears in typical English text"
+  source = "Lewand, Cryptological Mathematics"
+  colorPalette = "London"
+  sort = descending
+  valueLabels = true
+  highlight "E"
+
+  data {
+    "E" = 12.70
+    "T" = 9.06
+    "A" = 8.17
+    "O" = 7.51
+    ...
+  }
+}
+```
+
+Full grammar at `bpc://grammar`; 17 canonical samples at `bpc://samples/<id>` (`letter-frequency`, `co2-emissions`, `quarterly-revenue`, `browser-market`, `temperature-anomaly`, `population-stacked-bar`, ...).
+
+### `validate_dsl` — parse with precise errors
+
+Request:
+
+```json
+{
+  "name": "validate_dsl",
+  "arguments": { "source": "chart bar-vertical {\n  title = \"oops\n}" }
+}
+```
+
+Response (note the line + column):
+
+```json
+{
+  "ok": false,
+  "code": "E_PARSE",
+  "errors": [
+    { "line": 2, "column": 19, "message": "Expected \"\\\"\" but end of input found." }
+  ]
+}
+```
+
+### `inspect_dsl` — structured summary
+
+Request:
+
+```json
+{ "name": "inspect_dsl", "arguments": { "source": "<.bpc source>" } }
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "chartType": "bar-vertical",
+    "scenes": [{ "index": 0, "hasTransition": false }],
+    "hasAnnotations": false,
+    "hasColorizes": false,
+    "hasHighlights": true,
+    "hasAreaFills": false,
+    "seriesCount": 0,
+    "rowCount": 26
+  }
+}
+```
+
+### `recommend_chart_type` — ranked suggestions
+
+Request:
+
+```json
+{
+  "name": "recommend_chart_type",
+  "arguments": { "columnTypes": ["date", "number", "number", "number"], "rowCount": 24 }
+}
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "recommendations": [
+      { "chartType": "line-multi", "label": "Multi-Line Chart", "fitness": "best",
+        "reason": "1 date + 3 numeric columns — compare trends" },
+      { "chartType": "bar-multi",  "label": "Grouped Bar Chart", "fitness": "alternative",
+        "reason": "Can also show as grouped bars" }
+    ]
+  }
+}
+```
+
+### `render` — SVG (default) or PNG
+
+Request:
+
+```json
+{
+  "name": "render",
+  "arguments": { "source": "<.bpc source>", "format": "png", "width": 800, "height": 500 }
+}
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "svg": "<svg ...>...</svg>",
+    "png": "<base64-encoded image>",
+    "mimeType": "image/png"
+  }
+}
+```
+
+If rasterization fails (rare), the response is `{ ok: false, code: "E_RENDER", … }` **and still includes** the SVG that was successfully produced — partial success is preserved.
+
+### Reading a resource
+
+```json
+{ "uri": "bpc://handbook/choosing" }
+```
+
+Returns the full Markdown of the "Choosing the Right Chart" handbook page (same content as `docs.blueprintchart.com`).
+
+```json
+{ "uri": "bpc://samples/letter-frequency" }
+```
+
+Returns the raw `.bpc` source for the letter-frequency sample as `text/plain` — exactly what the LLM should imitate.
+
 ## License
 
 MIT
