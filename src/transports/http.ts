@@ -37,8 +37,9 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
   return {
     url,
     close: async () => {
-      await new Promise<void>((r, rej) => httpServer.close(err => (err ? rej(err) : r())))
       await transport.close()
+      httpServer.closeAllConnections()
+      await new Promise<void>((r, rej) => httpServer.close(err => (err ? rej(err) : r())))
     },
   }
 }
