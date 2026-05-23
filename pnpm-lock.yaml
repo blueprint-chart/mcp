@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@blueprint-chart/docs':
-        specifier: 0.1.18
-        version: 0.1.18
+        specifier: 0.1.20
+        version: 0.1.20
       '@blueprint-chart/lib':
         specifier: 0.1.19
         version: 0.1.19(d3-selection@3.0.0)
@@ -57,8 +57,8 @@ packages:
   '@asamuzakjp/css-color@3.2.0':
     resolution: {integrity: sha512-K1A6z8tS3XsmCMM86xoWdn7Fkdn9m6RSVtocUrJYIwZnFVkng/PvkEoWtOWmP+Scc6saYWHWZYbndEEXxl24jw==}
 
-  '@blueprint-chart/docs@0.1.18':
-    resolution: {integrity: sha512-ZCwR/VNTmCvMRrvygmgwAK2otUOrLJ3S3GY/ixnpLgWSDNH/wyaCtZP7w4p2ab4hwbHflkjoGfwmPOcukLD4RA==}
+  '@blueprint-chart/docs@0.1.20':
+    resolution: {integrity: sha512-IVGWEt/RbH0VDTUET13FrljjqO7JXO3YkTgDujfMyXAre69tZNuNbrcMtteAmzxeodc0GX6Gf3Vjyu5DxTYTnQ==}
 
   '@blueprint-chart/lib@0.1.19':
     resolution: {integrity: sha512-lIWz5Bx9VtF8GlqgfqQUHEaG/xgiSlyj+qN5WkENeUfNq4hbuWFV7gAI6V9K2ylKx9QjoHBVcXj6tXix41dChg==}
@@ -2027,7 +2027,7 @@ snapshots:
       '@csstools/css-tokenizer': 3.0.4
       lru-cache: 10.4.3
 
-  '@blueprint-chart/docs@0.1.18': {}
+  '@blueprint-chart/docs@0.1.20': {}
 
   '@blueprint-chart/lib@0.1.19(d3-selection@3.0.0)':
     dependencies:
