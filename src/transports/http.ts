@@ -124,6 +124,7 @@ function applyCors(res: ServerResponse, origin: string | undefined, allowed: str
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Mcp-Session-Id, Mcp-Protocol-Version, Accept')
+  res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id, Mcp-Protocol-Version')
   res.setHeader('Access-Control-Max-Age', '86400')
 }
 
@@ -244,6 +245,7 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
           // Connect a fresh server instance per SSE session to avoid state contamination
           const sessionServer = createServer()
           await sessionServer.connect(transport)
+          await transport.start() // Mandatory to start the stream!
           logEvent(silent, { event: 'sse_connected', ip, sessionId, headers: req.headers })
         }
       }
