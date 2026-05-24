@@ -7,7 +7,42 @@ import {
   type ServerResponse,
 } from 'node:http'
 import { randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createServer } from '../server.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const PUBLIC_DIR = join(__dirname, '..', '..', 'public')
+
+interface StaticAsset {
+  file: string
+  contentType: string
+}
+
+// Routes served from `public/`. `/favicon.ico` is mapped to the PNG file: modern
+// browsers identify image format by magic bytes, and shipping a real multi-size
+// ICO would add a build-time generator for no real benefit here.
+const STATIC_ROUTES: Record<string, StaticAsset> = {
+  '/favicon.ico': { file: 'favicon.png', contentType: 'image/png' },
+  '/favicon.png': { file: 'favicon.png', contentType: 'image/png' },
+  '/favicon.svg': { file: 'favicon.svg', contentType: 'image/svg+xml' },
+  '/apple-touch-icon.png': { file: 'apple-touch-icon.png', contentType: 'image/png' },
+}
+
+async function loadStaticAssets(): Promise<Map<string, { body: Buffer, contentType: string }>> {
+  const cache = new Map<string, { body: Buffer, contentType: string }>()
+  for (const [route, asset] of Object.entries(STATIC_ROUTES)) {
+    try {
+      const body = await readFile(join(PUBLIC_DIR, asset.file))
+      cache.set(route, { body, contentType: asset.contentType })
+    }
+    catch {
+      // Asset missing → route stays unregistered; request will 404 as before.
+    }
+  }
+  return cache
+}
 
 export interface StartHttpOptions {
   port: number
@@ -144,6 +179,7 @@ function jsonResponse(res: ServerResponse, status: number, body: unknown): void 
 export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
   const mcpServer = createServer()
   const sseSessions = new Map<string, SSEServerTransport>()
+  const staticAssets = await loadStaticAssets()
 
   const streamableTransport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
@@ -200,6 +236,17 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
     const url = new URL(rawUrl, `${proto}://${hostHeader}`)
     const pathname = url.pathname
     const normalizedPath = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname
+
+    // 4. Static assets (favicon, etc.) — served unauthenticated so browsers can
+    //    fetch them even when MCP_AUTH_TOKEN is set on the `/mcp` route.
+    if (req.method === 'GET' && staticAssets.has(normalizedPath)) {
+      const asset = staticAssets.get(normalizedPath)!
+      res.statusCode = 200
+      res.setHeader('Content-Type', asset.contentType)
+      res.setHeader('Cache-Control', 'public, max-age=86400')
+      res.end(asset.body)
+      return
+    }
 
     if (normalizedPath !== '/mcp') {
       logEvent(silent, { event: 'path_not_found', path: pathname, ip, method: req.method })

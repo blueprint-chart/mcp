@@ -116,6 +116,7 @@ To test the auth gate locally, add `-e MCP_AUTH_TOKEN=test-token` to `docker run
 | `/mcp` | POST | MCP JSON-RPC. Requires auth if `MCP_AUTH_TOKEN` is set. |
 | `/mcp` | GET | MCP SSE stream (long-lived). |
 | `/mcp` | OPTIONS | CORS preflight. |
+| `/favicon.ico`, `/favicon.png`, `/favicon.svg`, `/apple-touch-icon.png` | GET | Brand assets from `public/`. Always public, even when `MCP_AUTH_TOKEN` is set. |
 
 ### Logs
 

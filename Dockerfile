@@ -43,6 +43,7 @@ ENV NODE_ENV=production \
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=build /app/dist /app/dist
 COPY bin /app/bin
+COPY public /app/public
 COPY package.json README.md LICENSE /app/
 
 # Drop privileges; `node` user ships in the official image

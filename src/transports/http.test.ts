@@ -134,6 +134,45 @@ describe('http transport', () => {
     })
   })
 
+  it('serves /favicon.svg with image/svg+xml', async () => {
+    await withServer({ port: 0 }, async (url) => {
+      const res = await fetch(`${url}/favicon.svg`)
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toBe('image/svg+xml')
+      const body = await res.text()
+      expect(body).toContain('<svg')
+    })
+  })
+
+  it('serves /favicon.ico as PNG (modern browsers identify by magic bytes)', async () => {
+    await withServer({ port: 0 }, async (url) => {
+      const res = await fetch(`${url}/favicon.ico`)
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toBe('image/png')
+      const body = new Uint8Array(await res.arrayBuffer())
+      // PNG magic: 89 50 4E 47 0D 0A 1A 0A
+      expect(body[0]).toBe(0x89)
+      expect(body[1]).toBe(0x50)
+      expect(body[2]).toBe(0x4E)
+      expect(body[3]).toBe(0x47)
+    })
+  })
+
+  it('serves /apple-touch-icon.png', async () => {
+    await withServer({ port: 0 }, async (url) => {
+      const res = await fetch(`${url}/apple-touch-icon.png`)
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toBe('image/png')
+    })
+  })
+
+  it('serves static assets even when authToken is set', async () => {
+    await withServer({ port: 0, authToken: 'secret' }, async (url) => {
+      const res = await fetch(`${url}/favicon.svg`)
+      expect(res.status).toBe(200)
+    })
+  })
+
   it('rate-limits /mcp by IP', async () => {
     await withServer({ port: 0, rateLimitPerMinute: 2 }, async (url) => {
       const hit = async () => fetch(`${url}/mcp`, {
