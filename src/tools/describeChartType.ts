@@ -4,7 +4,7 @@ import type { ChartOptionDef } from '@blueprint-chart/lib'
 import { getDoc, listDocs } from '@blueprint-chart/docs'
 import { aliasesFor, canonicalChartType, listCanonicalChartTypes } from '../dsl/chartTypes'
 import { nearestSuggestion } from '../dsl/suggest'
-import { UNIVERSAL_PROPERTIES } from '../dsl/universalProperties'
+import { UNIVERSAL_PROPERTIES, UNIVERSAL_PROPERTY_META } from '../dsl/universalProperties'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 
 export const DescribeChartTypeInputSchema = z.object({
@@ -72,35 +72,6 @@ function extractDocSections(name: string): {
     whenNotToUse: sectionBullets('When NOT to use'),
     example,
   }
-}
-
-/**
- * Static metadata for universal properties that are consumed by astToDefinition
- * directly rather than registered per chart type via getChartOptions. These
- * appear in chart DSL across all chart types (e.g. sort, title, colors).
- */
-const UNIVERSAL_PROPERTY_META: Record<string, Omit<ChartTypeProperty, 'key'>> = {
-  title: { type: 'text', description: 'Chart title' },
-  description: { type: 'text', description: 'Chart description / subtitle' },
-  byline: { type: 'text', description: 'Byline / author credit' },
-  source: { type: 'text', description: 'Data source label' },
-  sourceUrl: { type: 'text', description: 'Data source URL' },
-  note: { type: 'text', description: 'Footer note' },
-  sort: { type: 'select', description: 'Sort direction for categories', choices: ['ascending', 'descending', 'none'] },
-  sortMode: { type: 'select', description: 'Sort mode for grouped/stacked charts', choices: ['total', 'within-groups', 'none'] },
-  theme: { type: 'text', description: 'Visual theme name' },
-  colorPalette: { type: 'text', description: 'Named color palette' },
-  colors: { type: 'colors', description: 'Custom color list' },
-  padding: { type: 'text', description: 'Frame padding (CSS shorthand)' },
-  background: { type: 'text', description: 'Background color' },
-  frameSizing: { type: 'select', description: 'Frame sizing mode', choices: ['auto', 'standard', 'aspect-ratio'] },
-  aspectRatio: { type: 'text', description: 'Aspect ratio (width / height)' },
-  valueLabels: { type: 'boolean', description: 'Show value labels on bars/segments' },
-  verticalLabelPosition: { type: 'select', description: 'Vertical axis label position', choices: ['auto', 'inside', 'outside', 'off'] },
-  horizontalLabelPosition: { type: 'select', description: 'Horizontal axis label position', choices: ['auto', 'inside', 'outside', 'off'] },
-  verticalGridStyle: { type: 'select', description: 'Vertical grid line style', choices: ['solid', 'dashed', 'dotted', 'none'] },
-  horizontalGridStyle: { type: 'select', description: 'Horizontal grid line style', choices: ['solid', 'dashed', 'dotted', 'none'] },
-  heightMode: { type: 'text', description: 'Height mode for stacked area charts' },
 }
 
 function mapOption(opt: ChartOptionDef): ChartTypeProperty {

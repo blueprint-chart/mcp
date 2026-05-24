@@ -1,8 +1,9 @@
 import { z } from 'zod'
 import { astToDefinition } from '@blueprint-chart/lib'
-import type { ChartNode, ColorizeNode, SceneNode, PropertyNode } from '@blueprint-chart/lib'
+import type { ChartNode, ColorizeNode, SceneNode } from '@blueprint-chart/lib'
 import { parseDsl } from '../parse'
 import { toolOk, type ToolResult } from '../errors'
+import { looksLikeQuotedLabel } from '../dsl/dataKey'
 
 export const InspectInputSchema = z.object({
   source: z.string(),
@@ -44,24 +45,6 @@ function summarizeScenes(ast: ChartNode): SceneSummary[] {
     name: scene.name ?? undefined,
     hasTransition: (scene.transforms?.length ?? 0) > 0,
   }))
-}
-
-/**
- * The lib's PropertyNode does not consistently expose an isQuoted flag in
- * v0.1.19, so we use the same heuristic as the validator: identifier-shaped
- * keys starting with lowercase are unquoted; everything else (proper nouns,
- * digit-starting labels, hyphen/underscore-leading) is treated as a quoted
- * label. See `src/dsl/validate.ts` for the parallel logic.
- */
-function looksLikeQuotedLabel(entry: PropertyNode): boolean {
-  if (entry.key === '_series') {
-    return false
-  }
-  const tagged = (entry as unknown as { isQuoted?: boolean }).isQuoted
-  if (typeof tagged === 'boolean') {
-    return tagged
-  }
-  return !/^[a-z][A-Za-z0-9_#-]*$/.test(entry.key)
 }
 
 function summarizeData(ast: ChartNode): DataSummary {

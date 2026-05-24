@@ -8,6 +8,19 @@ export const ErrorCode = {
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode]
 
 export interface ToolErrorEntry {
+  /**
+   * Item-level error code in `E_XXX` shape.
+   *
+   * Intentionally typed as `string` rather than the `ErrorCode` enum.
+   * Item-level codes are driven by the context that produced the error:
+   * - validation errors use `ValidationCode` values (e.g. `'E_UNKNOWN_PROPERTY'`)
+   * - render pre-flight uses `RenderDiagnosticCode` values (e.g. `'E_NO_DATA'`)
+   * - individual tools may define their own codes (e.g. `'E_UNKNOWN_SAMPLE'`)
+   *
+   * These codes differ from the top-level `ToolResult.code` field, which always
+   * uses the `ErrorCode` enum and categorises the failure class (parse, input,
+   * render, etc.). Item-level codes do not need to be enumerated here.
+   */
   code?: string
   path?: string
   line?: number

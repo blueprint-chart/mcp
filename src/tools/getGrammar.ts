@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { getDoc, listDocs } from '@blueprint-chart/docs'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 
-const SectionSchema = z.enum(['all', 'chart', 'data', 'properties', 'scenes', 'annotations']).default('all')
+const SectionSchema = z.enum(['all', 'chart', 'properties', 'scenes', 'annotations']).default('all')
 
 export const GetGrammarInputSchema = z.object({
   section: SectionSchema.optional(),
@@ -16,7 +16,6 @@ export interface GetGrammarOutput {
 
 const SECTION_TO_SLUG: Record<Exclude<GetGrammarOutput['section'], 'all'>, string> = {
   chart: 'index',
-  data: 'properties',
   properties: 'properties',
   scenes: 'scenes-and-transforms',
   annotations: 'annotations',

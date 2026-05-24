@@ -11,6 +11,10 @@ export type ValidateInput = z.infer<typeof ValidateInputSchema>
 export interface ValidateOutput {
   valid: boolean
   errors: ValidationIssue[]
+  /**
+   * Reserved for non-fatal advisories. Currently always empty; future versions
+   * may populate this without breaking existing clients.
+   */
   warnings: ValidationIssue[]
 }
 
@@ -23,6 +27,8 @@ export function validateDsl(input: ValidateInput): ToolResult<ValidateOutput> {
   return toolOk({
     valid: issues.length === 0,
     errors: issues,
+    // `warnings` is reserved for non-fatal advisories. Currently always empty;
+    // future versions may populate this without breaking existing clients.
     warnings: [],
   })
 }

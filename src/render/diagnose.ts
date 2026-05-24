@@ -4,6 +4,7 @@ import { canonicalChartType, listCanonicalChartTypes } from '../dsl/chartTypes'
 import { nearestSuggestion } from '../dsl/suggest'
 
 export type RenderDiagnosticCode =
+  | 'E_PARSE'
   | 'E_UNKNOWN_CHART_TYPE'
   | 'E_NO_DATA'
   | 'E_NO_RESOLVED_SERIES'
@@ -40,9 +41,15 @@ export function diagnoseRender(source: string, opts: DiagnoseOptions = {}): Diag
   try {
     ast = parse(source)
   }
-  catch {
-    // Parse errors are surfaced by the MCP transport's E_PARSE path, not here.
-    return { ok: true }
+  catch (err) {
+    return {
+      ok: false,
+      diagnostics: [{
+        code: 'E_PARSE',
+        path: 'source',
+        message: err instanceof Error ? err.message : String(err),
+      }],
+    }
   }
 
   const diagnostics: RenderDiagnostic[] = []

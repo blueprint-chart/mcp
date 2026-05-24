@@ -50,4 +50,12 @@ describe('diagnoseRender', () => {
       expect(issue!.context?.availableLabels).toEqual(['E'])
     }
   })
+
+  it('reports E_PARSE on malformed source', () => {
+    const r = diagnoseRender('@@@ not valid')
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.diagnostics[0]!.code).toBe('E_PARSE')
+    }
+  })
 })
