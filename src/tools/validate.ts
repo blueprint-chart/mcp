@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { parseDsl } from '../parse'
+import { validateAst, type ValidationIssue } from '../dsl/validate'
 import { toolOk, type ToolResult } from '../errors'
 
 export const ValidateInputSchema = z.object({
@@ -7,10 +8,21 @@ export const ValidateInputSchema = z.object({
 })
 export type ValidateInput = z.infer<typeof ValidateInputSchema>
 
-export function validateDsl(input: ValidateInput): ToolResult<{ valid: true }> {
+export interface ValidateOutput {
+  valid: boolean
+  errors: ValidationIssue[]
+  warnings: ValidationIssue[]
+}
+
+export function validateDsl(input: ValidateInput): ToolResult<ValidateOutput> {
   const parsed = parseDsl(input.source)
   if (!parsed.ok) {
     return parsed
   }
-  return toolOk({ valid: true as const })
+  const issues = validateAst(parsed.data.ast)
+  return toolOk({
+    valid: issues.length === 0,
+    errors: issues,
+    warnings: [],
+  })
 }

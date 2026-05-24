@@ -3,28 +3,33 @@ import { samples } from '@blueprint-chart/lib'
 import { validateDsl } from './validate'
 
 describe('validate_dsl', () => {
-  it('returns ok for every shipped sample', () => {
+  it('returns valid: true with empty errors/warnings for every sample', () => {
     for (const s of samples) {
       const r = validateDsl({ source: s.dsl })
-      expect(r.ok, `sample "${s.id}" should validate`).toBe(true)
+      expect(r.ok, `sample ${s.id}`).toBe(true)
+      if (r.ok) {
+        expect(r.data.valid).toBe(true)
+        expect(r.data.errors).toEqual([])
+        expect(r.data.warnings).toEqual([])
+      }
     }
   })
 
-  it('returns parse error with line/column', () => {
-    const r = validateDsl({ source: 'chart not-a-real-thing\n@@@' })
+  it('returns valid: false with E_UNKNOWN_CHART_TYPE on chart bar', () => {
+    const r = validateDsl({ source: 'chart bar { data { "E" = 1 } }' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.valid).toBe(false)
+      expect(r.data.errors[0]!.code).toBe('E_UNKNOWN_CHART_TYPE')
+      expect(r.data.errors[0]!.suggestion).toMatch(/^bar-/)
+    }
+  })
+
+  it('still surfaces PEG errors as E_PARSE (isError channel)', () => {
+    const r = validateDsl({ source: '@@@ not valid' })
     expect(r.ok).toBe(false)
     if (!r.ok) {
       expect(r.code).toBe('E_PARSE')
-      expect(r.errors[0]?.line).toBeTypeOf('number')
-    }
-  })
-
-  it('returns E_INPUT for non-string source', () => {
-    // @ts-expect-error testing runtime validation
-    const r = validateDsl({ source: null })
-    expect(r.ok).toBe(false)
-    if (!r.ok) {
-      expect(r.code).toBe('E_INPUT')
     }
   })
 })

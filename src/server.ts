@@ -24,7 +24,7 @@ interface ToolDef {
 
 const TOOLS: Record<string, ToolDef> = {
   validate_dsl: {
-    description: 'Parse a .bpc source string. Return ok or precise parse errors with line/column.',
+    description: 'Parse and semantically validate a .bpc source. Returns { valid, errors[], warnings[] }. Errors include unknown chart types, unknown properties, and empty data blocks with nearest-neighbour suggestions.',
     inputSchema: ValidateInputSchema,
     handler: args => validateDsl(args as { source: string }),
   },
