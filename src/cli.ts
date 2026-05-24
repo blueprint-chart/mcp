@@ -49,6 +49,7 @@ function parseConfig(argv: string[]): CliConfig {
         ? Number(env.MCP_RATE_LIMIT_PER_MINUTE)
         : undefined,
       silent: parseBool(env.MCP_SILENT),
+      rootRedirectUrl: env.MCP_ROOT_REDIRECT_URL || undefined,
     },
   }
 
@@ -88,6 +89,7 @@ Environment variables (HTTP mode):
   MCP_MAX_CONCURRENT_REQUESTS   Cap on concurrent POSTs (default 16).
   MCP_RATE_LIMIT_PER_MINUTE     Per-IP rate limit (default off; e.g. 60).
   MCP_SILENT=1                  Suppress JSON access logs to stderr.
+  MCP_ROOT_REDIRECT_URL         If set, redirect GET / to this URL.
 `)
       process.exit(0)
     }

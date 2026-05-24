@@ -42,6 +42,22 @@ describe('http transport', () => {
     })
   })
 
+  it('returns 404 for / by default', async () => {
+    await withServer({ port: 0 }, async (url) => {
+      const res = await fetch(`${url}/`)
+      expect(res.status).toBe(404)
+    })
+  })
+
+  it('redirects / to rootRedirectUrl when set', async () => {
+    const rootRedirectUrl = 'https://example.com'
+    await withServer({ port: 0, rootRedirectUrl }, async (url) => {
+      const res = await fetch(`${url}/`, { redirect: 'manual' })
+      expect(res.status).toBe(302)
+      expect(res.headers.get('location')).toBe(rootRedirectUrl)
+    })
+  })
+
   it('handles CORS preflight (OPTIONS)', async () => {
     await withServer({ port: 0 }, async (url) => {
       const res = await fetch(`${url}/mcp`, { method: 'OPTIONS' })

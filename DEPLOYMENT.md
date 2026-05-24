@@ -23,6 +23,7 @@ In **Variables**, set:
 | `MCP_ALLOWED_ORIGINS` | `https://claude.ai,https://chatgpt.com` | Restrict CORS. Use `*` only if you need open access. |
 | `MCP_RATE_LIMIT_PER_MINUTE` | `60` | Per-IP rate limit. Start at 60; raise if customers complain. |
 | `MCP_MAX_CONCURRENT_REQUESTS` | `16` | Cap on simultaneous POSTs. 16 is a safe default for a single 1 vCPU instance. Raise with the instance size. |
+| `MCP_ROOT_REDIRECT_URL` | *(unset)* | If set, redirect `GET /` to this URL (e.g. your marketing site). |
 
 `PORT` is set automatically by Railway — don't override it.
 
@@ -98,6 +99,7 @@ curl -X POST http://127.0.0.1:4321/mcp \
 | `MCP_MAX_CONCURRENT_REQUESTS` | `16` | Cap on concurrent POST /mcp requests. |
 | `MCP_RATE_LIMIT_PER_MINUTE` | *(off)* | Per-IP rate limit. Recommend `60` in prod. |
 | `MCP_SILENT` | `0` | `1` to suppress JSON access logs to stderr. |
+| `MCP_ROOT_REDIRECT_URL` | *(unset)* | If set, redirect `GET /` to this URL. |
 
 ### Endpoints
 

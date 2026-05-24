@@ -23,6 +23,8 @@ export interface StartHttpOptions {
   rateLimitPerMinute?: number
   /** Suppress JSON access logs. Default: false (logs to stderr). */
   silent?: boolean
+  /** If set, redirect GET / to this URL. Otherwise returns 404. */
+  rootRedirectUrl?: string
 }
 
 export interface HttpHandle {
@@ -172,6 +174,14 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
     // Health check (Railway / load-balancer liveness probe)
     if (req.url === '/healthz' || req.url === '/health') {
       jsonResponse(res, 200, { status: 'ok' })
+      return
+    }
+
+    // Root redirect
+    if (req.url === '/' && opts.rootRedirectUrl) {
+      res.statusCode = 302
+      res.setHeader('Location', opts.rootRedirectUrl)
+      res.end()
       return
     }
 
