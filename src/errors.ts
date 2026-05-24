@@ -8,11 +8,14 @@ export const ErrorCode = {
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode]
 
 export interface ToolErrorEntry {
+  code?: string
   path?: string
   line?: number
   column?: number
   message: string
   snippet?: string
+  context?: Record<string, unknown>
+  suggestion?: string
 }
 
 export type ToolResult<T> =
