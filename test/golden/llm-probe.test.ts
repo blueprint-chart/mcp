@@ -24,12 +24,12 @@ describe('LLM-shaped probe — three-call convergence', () => {
     const rendered = await renderTool({ source: ex.data.dsl, format: 'svg' })
     expect(rendered.ok).toBe(true)
     if (rendered.ok) {
-      expect(rendered.data.svg.length).toBeGreaterThan(100)
+      expect(rendered.data.svg!.length).toBeGreaterThan(100)
     }
   })
 
   it('describe_chart_type → get_example → render also converges', async () => {
-    const desc = describeChartType({ name: 'bar-horizontal' })
+    const desc = describeChartType({ chartType: 'bar-horizontal' })
     expect(desc.ok).toBe(true)
     if (!desc.ok || !desc.data.exampleSlug) {
       return

@@ -3,7 +3,7 @@ import { describeChartType } from './describeChartType'
 
 describe('describe_chart_type', () => {
   it('returns properties + summary for bar-horizontal', () => {
-    const r = describeChartType({ name: 'bar-horizontal' })
+    const r = describeChartType({ chartType: 'bar-horizontal' })
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.data.name).toBe('bar-horizontal')
@@ -17,7 +17,7 @@ describe('describe_chart_type', () => {
   })
 
   it('accepts an alias and normalizes', () => {
-    const r = describeChartType({ name: 'horizontal-bar' })
+    const r = describeChartType({ chartType: 'horizontal-bar' })
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.data.name).toBe('bar-horizontal')
@@ -25,7 +25,7 @@ describe('describe_chart_type', () => {
   })
 
   it('errors with structured suggestion on unknown name', () => {
-    const r = describeChartType({ name: 'bar' })
+    const r = describeChartType({ chartType: 'bar' })
     expect(r.ok).toBe(false)
     if (!r.ok) {
       expect(r.errors[0]!.code).toBe('E_UNKNOWN_CHART_TYPE')
@@ -34,7 +34,7 @@ describe('describe_chart_type', () => {
   })
 
   it('includes a starter dataShape example', () => {
-    const r = describeChartType({ name: 'bar-vertical' })
+    const r = describeChartType({ chartType: 'bar-vertical' })
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.data.dataShape.kind).toMatch(/single-series|multi-series/)

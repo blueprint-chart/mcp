@@ -43,7 +43,7 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: args => recommendChartType(args),
   },
   render: {
-    description: 'Render a .bpc source to SVG (default), PNG, or HTML. Always returns the structured frame metadata (title, description, byline, source, sourceUrl, note) so an LLM can compose chart metadata into its response. Use format=html for a self-contained HTML chart card.',
+    description: 'Render a .bpc source to SVG (default), PNG, or HTML. Always returns structured frame metadata (title, description, byline, source, sourceUrl, note). Pass `save: <path>` to write the primary output to disk and omit it from the response — useful when the LLM client cannot display binary payloads inline. Saving requires MCP_ALLOW_FS_WRITE=1.',
     inputSchema: RenderInputSchema,
     handler: args => renderTool(args),
   },
@@ -53,7 +53,7 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: () => listChartTypes(),
   },
   describe_chart_type: {
-    description: 'Return everything an LLM needs to write a .bpc for a given chart type: summary, when-to-use, when-NOT-to-use, full property list with enum choices, data-shape example, and a pointer to a canonical sample.',
+    description: 'Return everything an LLM needs to write a .bpc for a given chart type. Input: { chartType: "bar-horizontal" } (or any canonical/alias name from list_chart_types). Returns summary, when-to-use, when-NOT-to-use, full property list with enum choices, data-shape example, and a pointer to a canonical sample.',
     inputSchema: DescribeChartTypeInputSchema,
     handler: args => describeChartType(args),
   },

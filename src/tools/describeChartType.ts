@@ -8,7 +8,7 @@ import { UNIVERSAL_PROPERTIES, UNIVERSAL_PROPERTY_META } from '../dsl/universalP
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 
 export const DescribeChartTypeInputSchema = z.object({
-  name: z.string(),
+  chartType: z.string(),
 }).strict()
 export type DescribeChartTypeInput = z.infer<typeof DescribeChartTypeInputSchema>
 
@@ -132,15 +132,15 @@ export function describeChartType(input: unknown): ToolResult<DescribeChartTypeO
       parsed.error.issues.map(i => ({ path: i.path.join('.'), message: i.message })),
     )
   }
-  const canonical = canonicalChartType(parsed.data.name)
+  const canonical = canonicalChartType(parsed.data.chartType)
   if (!canonical) {
     const known = listCanonicalChartTypes()
     return toolError(ErrorCode.E_INPUT, [{
       code: 'E_UNKNOWN_CHART_TYPE',
-      path: 'name',
-      message: `Unknown chart type "${parsed.data.name}". Known types: ${known.join(', ')}.`,
-      suggestion: nearestSuggestion(parsed.data.name, known),
-      context: { got: parsed.data.name, known },
+      path: 'chartType',
+      message: `Unknown chart type "${parsed.data.chartType}". Known types: ${known.join(', ')}.`,
+      suggestion: nearestSuggestion(parsed.data.chartType, known),
+      context: { got: parsed.data.chartType, known },
     }])
   }
 
