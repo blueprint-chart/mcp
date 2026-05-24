@@ -6,3 +6,9 @@ packages:
 # are released and consumed immediately from the same monorepo author. Re-evaluate if
 # the supply-chain mix changes.
 minimumReleaseAge: 0
+
+# pnpm 11.x blocks postinstall scripts by default. esbuild ships a native binary
+# postinstall step required by vitest/tsx — approve it explicitly here rather
+# than letting CI fail with ERR_PNPM_IGNORED_BUILDS.
+onlyBuiltDependencies:
+  - esbuild
