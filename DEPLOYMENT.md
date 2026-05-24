@@ -54,12 +54,12 @@ Once `https://mcp.blueprintchart.com` is live the endpoint is open — no token 
 
 **Claude.ai (web) — Pro/Team/Enterprise tiers:**
 1. Settings → Connectors → **Add custom integration**.
-2. URL: `https://mcp.blueprintchart.com/mcp`
+2. URL: `https://mcp.blueprintchart.com`
 3. Save. No auth header to enter.
 
 **Claude Code (CLI):**
 ```bash
-claude mcp add blueprint-chart --transport http https://mcp.blueprintchart.com/mcp
+claude mcp add blueprint-chart --transport http https://mcp.blueprintchart.com
 ```
 
 **Cursor:** Settings → MCP → Add server → URL.
@@ -68,7 +68,7 @@ claude mcp add blueprint-chart --transport http https://mcp.blueprintchart.com/m
 
 ## Authentication
 
-The reference deployment runs **without authentication**. If you fork the project for a private or internal deployment, set `MCP_AUTH_TOKEN` to a 32+ char random secret. The server then requires `Authorization: Bearer <token>` on every `/mcp` call (see `src/transports/http.ts`).
+The reference deployment runs **without authentication**. If you fork the project for a private or internal deployment, set `MCP_AUTH_TOKEN` to a 32+ char random secret. The server then requires `Authorization: Bearer <token>` on every MCP call (see `src/transports/http.ts`).
 
 Caveat: `MCP_AUTH_TOKEN` is a static shared secret. It works with clients that let you configure a custom header (Claude Code CLI, Cursor, VS Code MCP, server-to-server scripts) but **not** with Claude.ai's web connector dialog or ChatGPT's custom connectors — those clients speak OAuth 2.1 and have no field to paste a bearer token. If you need web-client access *and* authentication, you have to implement OAuth on the server — this repo does not.
 
@@ -84,7 +84,7 @@ docker run --rm -p 4321:4321 \
 
 # In another terminal
 curl http://127.0.0.1:4321/healthz                                    # → {"status":"ok"}
-curl -X POST http://127.0.0.1:4321/mcp \
+curl -X POST http://127.0.0.1:4321/ \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
@@ -101,10 +101,10 @@ To test the auth gate locally, add `-e MCP_AUTH_TOKEN=test-token` to `docker run
 | `PORT` | `4321` | HTTP port. Railway sets this. |
 | `MCP_HTTP` | `0` | `1` to default to HTTP mode (equivalent to `--http`). |
 | `MCP_HOST` | `127.0.0.1` | Bind host. Set to `0.0.0.0` in containers. |
-| `MCP_AUTH_TOKEN` | *(unset)* | If set, require `Authorization: Bearer <token>` on every `/mcp` call. See [Authentication](#authentication). Left unset in the reference deployment. |
+| `MCP_AUTH_TOKEN` | *(unset)* | If set, require `Authorization: Bearer <token>` on every MCP call. See [Authentication](#authentication). Left unset in the reference deployment. |
 | `MCP_ALLOWED_ORIGINS` | `*` | Comma-separated CORS allowlist. `*` is fine for a public deployment; tighten if you go private. |
 | `MCP_TRUST_PROXY` | `0` | `1` to read `X-Forwarded-For`. Set behind Railway/Cloudflare/Caddy. |
-| `MCP_MAX_CONCURRENT_REQUESTS` | `16` | Cap on concurrent POST /mcp requests. |
+| `MCP_MAX_CONCURRENT_REQUESTS` | `16` | Cap on concurrent MCP POST requests. |
 | `MCP_RATE_LIMIT_PER_MINUTE` | *(off)* | Per-IP rate limit. Recommend `60` in prod. |
 | `MCP_SILENT` | `0` | `1` to suppress JSON access logs to stderr. |
 | `MCP_ROOT_REDIRECT_URL` | *(unset)* | If set, redirect `GET /` to this URL. |
@@ -115,9 +115,11 @@ To test the auth gate locally, add `-e MCP_AUTH_TOKEN=test-token` to `docker run
 | Path | Method | Purpose |
 | --- | --- | --- |
 | `/healthz` (alias `/health`) | GET | Liveness probe. Returns `{status:"ok"}`. |
-| `/mcp` | POST | MCP JSON-RPC. Requires auth if `MCP_AUTH_TOKEN` is set. |
-| `/mcp` | GET | MCP SSE stream (long-lived). |
-| `/mcp` | OPTIONS | CORS preflight. |
+| `/` | POST | MCP JSON-RPC. Requires auth if `MCP_AUTH_TOKEN` is set. |
+| `/` | GET (with `Accept: text/event-stream` or `Mcp-Session-Id`) | MCP SSE stream (long-lived). |
+| `/` | GET (plain browser) | Redirects to `MCP_ROOT_REDIRECT_URL` if set; otherwise 404. |
+| `/` | DELETE | Streamable HTTP session teardown (requires `Mcp-Session-Id`). |
+| `/` | OPTIONS | CORS preflight. |
 | `/favicon.ico`, `/favicon.png`, `/favicon.svg`, `/apple-touch-icon.png` | GET | Brand assets from `public/`. Always public, even when `MCP_AUTH_TOKEN` is set. |
 
 ### Logs

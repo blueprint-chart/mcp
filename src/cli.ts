@@ -127,7 +127,7 @@ const config = parseConfig(process.argv.slice(2))
 if (config.http) {
   startHttp(config.httpOpts)
     .then((handle: HttpHandle) => {
-      process.stderr.write(`MCP HTTP server listening at ${handle.url}/mcp\n`)
+      process.stderr.write(`MCP HTTP server listening at ${handle.url}\n`)
       installSignalHandlers(handle.close)
     })
     .catch((err: unknown) => {

@@ -15,10 +15,10 @@ async function withServer<T>(
 }
 
 describe('http transport', () => {
-  it('responds to /mcp tools/list after establishing SSE', async () => {
+  it('responds to root tools/list after establishing SSE', async () => {
     await withServer({ port: 0 }, async (url) => {
       // 1. Establish SSE session
-      const sseRes = await fetch(`${url}/mcp`, {
+      const sseRes = await fetch(`${url}/`, {
         headers: { accept: 'text/event-stream' },
       })
       expect(sseRes.status).toBe(200)
@@ -36,7 +36,7 @@ describe('http transport', () => {
       const sessionId = sessionIdMatch[1]
 
       // 2. Post message using sessionId
-      const res = await fetch(`${url}/mcp?sessionId=${sessionId}`, {
+      const res = await fetch(`${url}/?sessionId=${sessionId}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'accept': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
@@ -71,7 +71,7 @@ describe('http transport', () => {
     })
   })
 
-  it('redirects / to rootRedirectUrl when set', async () => {
+  it('redirects plain GET / to rootRedirectUrl when set', async () => {
     const rootRedirectUrl = 'https://example.com'
     await withServer({ port: 0, rootRedirectUrl }, async (url) => {
       const res = await fetch(`${url}/`, { redirect: 'manual' })
@@ -80,17 +80,49 @@ describe('http transport', () => {
     })
   })
 
+  it('routes MCP traffic to / even when rootRedirectUrl is set', async () => {
+    // The key co-existence test: a configured root redirect must NOT swallow
+    // MCP requests. POSTs always count as MCP; the redirect only fires for
+    // browser-style GETs.
+    await withServer({ port: 0, rootRedirectUrl: 'https://example.com' }, async (url) => {
+      const res = await fetch(`${url}/`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'accept': 'application/json, text/event-stream' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 't', version: '0' } },
+        }),
+      })
+      expect(res.status).toBe(200)
+      expect(res.headers.get('mcp-session-id')).toMatch(/^[0-9a-f-]{36}$/)
+    })
+  })
+
+  it('routes GET / with text/event-stream as MCP SSE even when rootRedirectUrl is set', async () => {
+    await withServer({ port: 0, rootRedirectUrl: 'https://example.com' }, async (url) => {
+      const res = await fetch(`${url}/`, {
+        headers: { accept: 'text/event-stream' },
+        redirect: 'manual',
+      })
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toMatch(/text\/event-stream/)
+      await res.body?.cancel()
+    })
+  })
+
   it('handles CORS preflight (OPTIONS)', async () => {
     await withServer({ port: 0 }, async (url) => {
-      const res = await fetch(`${url}/mcp`, { method: 'OPTIONS' })
+      const res = await fetch(`${url}/`, { method: 'OPTIONS' })
       expect(res.status).toBe(204)
       expect(res.headers.get('access-control-allow-methods')).toMatch(/POST/)
     })
   })
 
-  it('rejects /mcp POST without sessionId and not an initialize request', async () => {
+  it('rejects POST without sessionId and not an initialize request', async () => {
     await withServer({ port: 0 }, async (url) => {
-      const res = await fetch(`${url}/mcp`, {
+      const res = await fetch(`${url}/`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'accept': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
@@ -104,9 +136,9 @@ describe('http transport', () => {
     })
   })
 
-  it('accepts /mcp POST initialize and returns a Mcp-Session-Id', async () => {
+  it('accepts POST initialize and returns a Mcp-Session-Id', async () => {
     await withServer({ port: 0 }, async (url) => {
-      const res = await fetch(`${url}/mcp`, {
+      const res = await fetch(`${url}/`, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -124,9 +156,9 @@ describe('http transport', () => {
     })
   })
 
-  it('rejects /mcp POST with invalid sessionId', async () => {
+  it('rejects POST with invalid sessionId', async () => {
     await withServer({ port: 0 }, async (url) => {
-      const res = await fetch(`${url}/mcp?sessionId=nope`, {
+      const res = await fetch(`${url}/?sessionId=nope`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'accept': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
@@ -137,7 +169,7 @@ describe('http transport', () => {
 
   it('rejects SSE without token when authToken is set', async () => {
     await withServer({ port: 0, authToken: 'secret' }, async (url) => {
-      const res = await fetch(`${url}/mcp`, {
+      const res = await fetch(`${url}/`, {
         headers: { accept: 'text/event-stream' },
       })
       expect(res.status).toBe(401)
@@ -146,7 +178,7 @@ describe('http transport', () => {
 
   it('accepts SSE with correct bearer token', async () => {
     await withServer({ port: 0, authToken: 'secret' }, async (url) => {
-      const res = await fetch(`${url}/mcp`, {
+      const res = await fetch(`${url}/`, {
         headers: {
           accept: 'text/event-stream',
           authorization: 'Bearer secret',
@@ -196,9 +228,9 @@ describe('http transport', () => {
     })
   })
 
-  it('rate-limits /mcp by IP', async () => {
+  it('rate-limits MCP requests by IP', async () => {
     await withServer({ port: 0, rateLimitPerMinute: 2 }, async (url) => {
-      const hit = async () => fetch(`${url}/mcp`, {
+      const hit = async () => fetch(`${url}/`, {
         headers: { accept: 'text/event-stream' },
       })
       const first = await hit()

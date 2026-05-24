@@ -229,16 +229,7 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       return
     }
 
-    // 2. Root redirect (highest priority after health check)
-    if ((rawUrl === '/' || rawUrl === '') && opts.rootRedirectUrl) {
-      logEvent(silent, { event: 'root_redirect', ip, to: opts.rootRedirectUrl })
-      res.statusCode = 302
-      res.setHeader('Location', opts.rootRedirectUrl)
-      res.end()
-      return
-    }
-
-    // 3. CORS preflight
+    // 2. CORS preflight (any path — claude.ai sends it before the actual POST)
     if (req.method === 'OPTIONS') {
       logEvent(silent, { event: 'preflight', ip, headers: req.headers })
       res.statusCode = 204
@@ -250,8 +241,8 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
     const pathname = url.pathname
     const normalizedPath = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname
 
-    // 4. Static assets (favicon, etc.) — served unauthenticated so browsers can
-    //    fetch them even when MCP_AUTH_TOKEN is set on the `/mcp` route.
+    // 3. Static assets (favicon, etc.) — served unauthenticated so browsers can
+    //    fetch them even when MCP_AUTH_TOKEN is set on the MCP route.
     if (req.method === 'GET' && staticAssets.has(normalizedPath)) {
       const asset = staticAssets.get(normalizedPath)!
       res.statusCode = 200
@@ -261,8 +252,30 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       return
     }
 
-    if (normalizedPath !== '/mcp') {
+    // MCP lives at the root path. Everything else is 404.
+    if (normalizedPath !== '/') {
       logEvent(silent, { event: 'path_not_found', path: pathname, ip, method: req.method })
+      jsonResponse(res, 404, { error: 'Not Found' })
+      return
+    }
+
+    // Disambiguate MCP traffic from browser visits to GET /. MCP clients always
+    // POST/DELETE, or GET with `text/event-stream` or an `Mcp-Session-Id` header.
+    // A plain browser GET / (no MCP signals) falls back to the optional redirect.
+    const acceptHeader = String(req.headers.accept ?? '')
+    const isMcpRequest = req.method === 'POST'
+      || req.method === 'DELETE'
+      || (req.method === 'GET' && (Boolean(req.headers['mcp-session-id']) || acceptHeader.includes('text/event-stream')))
+
+    if (!isMcpRequest) {
+      if (req.method === 'GET' && opts.rootRedirectUrl) {
+        logEvent(silent, { event: 'root_redirect', ip, to: opts.rootRedirectUrl })
+        res.statusCode = 302
+        res.setHeader('Location', opts.rootRedirectUrl)
+        res.end()
+        return
+      }
+      logEvent(silent, { event: 'root_non_mcp', ip, method: req.method, accept: acceptHeader })
       jsonResponse(res, 404, { error: 'Not Found' })
       return
     }
@@ -308,7 +321,7 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
           await transport.handleRequest(req, res)
         }
         else {
-          const transport = new SSEServerTransport('/mcp', res)
+          const transport = new SSEServerTransport('/', res)
           const sessionId = transport.sessionId
           sseSessions.set(sessionId, transport)
           transport.onclose = () => {

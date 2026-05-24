@@ -18,7 +18,7 @@ async function callInMemory() {
 async function callOverHttp() {
   const handle = await startHttp({ port: 0, silent: true })
   try {
-    const transport = new StreamableHTTPClientTransport(new URL(`${handle.url}/mcp`))
+    const transport = new StreamableHTTPClientTransport(new URL(`${handle.url}/`))
     const client = new Client({ name: 't', version: '0' }, { capabilities: {} })
     await client.connect(transport)
     return await client.callTool({ name: 'validate_dsl', arguments: { source: samples[0]!.dsl } })
