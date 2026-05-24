@@ -1,5 +1,20 @@
-import { createCanvas } from '@napi-rs/canvas'
+import { createCanvas, GlobalFonts } from '@napi-rs/canvas'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
 import type { DOMWindow } from 'jsdom'
+
+// Register a bundled font under "sans-serif" so text-width measurements are
+// deterministic regardless of which system fonts the host machine has. Without
+// this, `ctx.measureText` resolves "sans-serif" through fontconfig and picks
+// whatever it finds (DejaVu Sans on Debian/Docker, Noto Sans on Ubuntu CI,
+// system fonts on macOS) — and each one yields slightly different metrics,
+// breaking golden-render snapshots.
+//
+// Path resolves correctly both pre-build (tsx running src/) and post-build
+// (node running dist/) because the build step copies fonts/ alongside the JS.
+const fontsDir = resolve(dirname(fileURLToPath(import.meta.url)), 'fonts')
+GlobalFonts.registerFromPath(resolve(fontsDir, 'DejaVuSans.ttf'), 'sans-serif')
+GlobalFonts.registerFromPath(resolve(fontsDir, 'DejaVuSans-Bold.ttf'), 'sans-serif')
 
 const canvas = createCanvas(1, 1)
 const ctx = canvas.getContext('2d')
