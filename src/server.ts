@@ -11,6 +11,10 @@ import { validateDsl, ValidateInputSchema } from './tools/validate'
 import { inspectDsl, InspectInputSchema } from './tools/inspect'
 import { recommendChartType, RecommendInputSchema } from './tools/recommend'
 import { renderTool, RenderInputSchema } from './tools/render'
+import { listChartTypes, ListChartTypesInputSchema } from './tools/listChartTypes'
+import { describeChartType, DescribeChartTypeInputSchema } from './tools/describeChartType'
+import { getExample, GetExampleInputSchema } from './tools/getExample'
+import { getGrammar, GetGrammarInputSchema } from './tools/getGrammar'
 import { listResources, readResource } from './resources/index'
 import { authorChartPrompt } from './prompts/authorChart'
 import { zodToJsonSchema } from './lib/zodToJsonSchema'
@@ -22,7 +26,7 @@ interface ToolDef {
   handler: (args: unknown) => ToolResult<unknown> | Promise<ToolResult<unknown>>
 }
 
-const TOOLS: Record<string, ToolDef> = {
+export const TOOLS: Record<string, ToolDef> = {
   validate_dsl: {
     description: 'Parse and semantically validate a .bpc source. Returns { valid, errors[], warnings[] }. Errors include unknown chart types, unknown properties, and empty data blocks with nearest-neighbour suggestions.',
     inputSchema: ValidateInputSchema,
@@ -42,6 +46,26 @@ const TOOLS: Record<string, ToolDef> = {
     description: 'Render a .bpc source to SVG (default) or PNG. Accepts scene index, width, height.',
     inputSchema: RenderInputSchema,
     handler: args => renderTool(args),
+  },
+  list_chart_types: {
+    description: 'List every chart type the renderer supports, with aliases and one-line summaries. Call this before writing .bpc if unsure which type to use.',
+    inputSchema: ListChartTypesInputSchema,
+    handler: () => listChartTypes(),
+  },
+  describe_chart_type: {
+    description: 'Return everything an LLM needs to write a .bpc for a given chart type: summary, when-to-use, when-NOT-to-use, full property list with enum choices, data-shape example, and a pointer to a canonical sample.',
+    inputSchema: DescribeChartTypeInputSchema,
+    handler: args => describeChartType(args),
+  },
+  get_example: {
+    description: 'Return a canonical .bpc example. Pass { name } for a specific sample id, { chartType } for the first sample of that type, or no args for a starter sample.',
+    inputSchema: GetExampleInputSchema,
+    handler: args => getExample(args),
+  },
+  get_grammar: {
+    description: 'Return the .bpc DSL grammar as markdown. Pass { section: "chart" | "data" | "properties" | "scenes" | "annotations" } for a focused subset, or no args for the full grammar.',
+    inputSchema: GetGrammarInputSchema,
+    handler: args => getGrammar(args),
   },
 }
 
