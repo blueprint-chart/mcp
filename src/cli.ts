@@ -1,32 +1,95 @@
 import { startStdio } from './transports/stdio.js'
-import { startHttp, type HttpHandle } from './transports/http.js'
+import { startHttp, type HttpHandle, type StartHttpOptions } from './transports/http.js'
 
-interface CliArgs {
+interface CliConfig {
   http: boolean
   port: number
   host: string
+  httpOpts: StartHttpOptions
 }
 
-function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { http: false, port: 4321, host: '127.0.0.1' }
+function parseBool(value: string | undefined): boolean {
+  if (!value) return false
+  return value === '1' || value.toLowerCase() === 'true'
+}
+
+function parseList(value: string | undefined): string[] | undefined {
+  if (!value) return undefined
+  return value.split(',').map(s => s.trim()).filter(Boolean)
+}
+
+function parseConfig(argv: string[]): CliConfig {
+  const env = process.env
+  const port = Number(env.PORT) || 4321
+  const host = env.MCP_HOST || '127.0.0.1'
+  const allowedOriginsList = parseList(env.MCP_ALLOWED_ORIGINS)
+  const allowedOrigins: string[] | '*' | undefined = allowedOriginsList
+    && allowedOriginsList.length === 1 && allowedOriginsList[0] === '*'
+    ? '*'
+    : allowedOriginsList
+
+  const config: CliConfig = {
+    http: parseBool(env.MCP_HTTP),
+    port,
+    host,
+    httpOpts: {
+      port,
+      host,
+      authToken: env.MCP_AUTH_TOKEN || undefined,
+      allowedOrigins,
+      trustProxy: parseBool(env.MCP_TRUST_PROXY),
+      maxConcurrentRequests: env.MCP_MAX_CONCURRENT_REQUESTS
+        ? Number(env.MCP_MAX_CONCURRENT_REQUESTS)
+        : undefined,
+      rateLimitPerMinute: env.MCP_RATE_LIMIT_PER_MINUTE
+        ? Number(env.MCP_RATE_LIMIT_PER_MINUTE)
+        : undefined,
+      silent: parseBool(env.MCP_SILENT),
+    },
+  }
+
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--http') {
-      args.http = true
+      config.http = true
+    }
+    else if (a === '--stdio') {
+      config.http = false
     }
     else if (a === '--port' && argv[i + 1]) {
-      args.port = Number(argv[++i])
+      const p = Number(argv[++i])
+      config.port = p
+      config.httpOpts.port = p
     }
     else if (a === '--host' && argv[i + 1]) {
       const next = argv[++i]
-      if (next) args.host = next
+      if (next) {
+        config.host = next
+        config.httpOpts.host = next
+      }
     }
     else if (a === '--help' || a === '-h') {
-      process.stderr.write('Usage: blueprint-chart-mcp [--http] [--port N] [--host HOST]\n')
+      process.stderr.write(`Usage: blueprint-chart-mcp [--http|--stdio] [--port N] [--host HOST]
+
+Stdio mode (default): for Claude Desktop, Claude Code, Cursor, etc.
+HTTP mode (--http): for hosted use (e.g. Railway, behind a reverse proxy).
+
+Environment variables (HTTP mode):
+  PORT                          HTTP port (default 4321). Railway sets this.
+  MCP_HTTP=1                    Default to HTTP mode (same as --http).
+  MCP_HOST                      Bind host (default 127.0.0.1; use 0.0.0.0 in containers).
+  MCP_AUTH_TOKEN                If set, require Authorization: Bearer <token>.
+  MCP_ALLOWED_ORIGINS           Comma-separated CORS allowlist, or "*" (default).
+  MCP_TRUST_PROXY=1             Read X-Forwarded-For (enable behind a proxy / Railway).
+  MCP_MAX_CONCURRENT_REQUESTS   Cap on concurrent POSTs (default 16).
+  MCP_RATE_LIMIT_PER_MINUTE     Per-IP rate limit (default off; e.g. 60).
+  MCP_SILENT=1                  Suppress JSON access logs to stderr.
+`)
       process.exit(0)
     }
   }
-  return args
+
+  return config
 }
 
 function installSignalHandlers(close: () => Promise<void>): void {
@@ -47,10 +110,10 @@ function installSignalHandlers(close: () => Promise<void>): void {
   process.on('SIGTERM', handler)
 }
 
-const args = parseArgs(process.argv.slice(2))
+const config = parseConfig(process.argv.slice(2))
 
-if (args.http) {
-  startHttp({ port: args.port, host: args.host })
+if (config.http) {
+  startHttp(config.httpOpts)
     .then((handle: HttpHandle) => {
       process.stderr.write(`MCP HTTP server listening at ${handle.url}/mcp\n`)
       installSignalHandlers(handle.close)
