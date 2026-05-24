@@ -9,6 +9,7 @@ minimumReleaseAge: 0
 
 # pnpm 11.x blocks postinstall scripts by default. esbuild ships a native binary
 # postinstall step required by vitest/tsx — approve it explicitly here rather
-# than letting CI fail with ERR_PNPM_IGNORED_BUILDS.
-onlyBuiltDependencies:
-  - esbuild
+# than letting CI fail with ERR_PNPM_IGNORED_BUILDS. Key is `allowBuilds`
+# (map of pkg-name -> true); the v10 `onlyBuiltDependencies` array was removed.
+allowBuilds:
+  esbuild: true
