@@ -42,6 +42,9 @@ export const UNIVERSAL_PROPERTIES: ReadonlySet<string> = new Set([
   'horizontalLabelPosition',
   'verticalGridStyle',
   'horizontalGridStyle',
+
+  // TODO(lib): expose heightMode on area-stacked via getChartOptions
+  'heightMode',
 ])
 
 export function isUniversalProperty(key: string): boolean {
