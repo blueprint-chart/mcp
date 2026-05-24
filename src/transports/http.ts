@@ -1,5 +1,6 @@
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import {
   createServer as createHttpServer,
   type IncomingMessage,
@@ -176,15 +177,27 @@ function jsonResponse(res: ServerResponse, status: number, body: unknown): void 
   res.end(JSON.stringify(body))
 }
 
-export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
-  const mcpServer = createServer()
-  const sseSessions = new Map<string, SSEServerTransport>()
-  const staticAssets = await loadStaticAssets()
+async function readRequestBody(req: IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = []
+  for await (const chunk of req) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  }
+  const raw = Buffer.concat(chunks).toString('utf8')
+  if (!raw) {
+    return undefined
+  }
+  try {
+    return JSON.parse(raw)
+  }
+  catch {
+    return undefined
+  }
+}
 
-  const streamableTransport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-  })
-  await mcpServer.connect(streamableTransport)
+export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
+  const sseSessions = new Map<string, SSEServerTransport>()
+  const streamableSessions = new Map<string, StreamableHTTPServerTransport>()
+  const staticAssets = await loadStaticAssets()
 
   const allowedOrigins = opts.allowedOrigins ?? '*'
   const trustProxy = opts.trustProxy ?? false
@@ -275,11 +288,24 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
     }
 
     try {
+      const streamableSessionHeader = req.headers['mcp-session-id']
+      const streamableSessionId = Array.isArray(streamableSessionHeader)
+        ? streamableSessionHeader[0]
+        : streamableSessionHeader
+
       if (req.method === 'GET') {
-        // Distinguish between Streamable HTTP (w/ session header) and legacy SSE (w/o session header)
-        if (req.headers['mcp-session-id']) {
-          logEvent(silent, { event: 'streamable_get', ip, sessionId: req.headers['mcp-session-id'] })
-          await streamableTransport.handleRequest(req, res)
+        // Streamable HTTP GETs always include the Mcp-Session-Id header — they're
+        // a server→client SSE notification stream for an established session.
+        // Legacy SSE GETs are the bootstrap and have no session header.
+        if (streamableSessionId) {
+          const transport = streamableSessions.get(streamableSessionId)
+          if (!transport) {
+            logEvent(silent, { event: 'streamable_get_invalid_session', ip, sessionId: streamableSessionId })
+            jsonResponse(res, 404, { error: 'Unknown session' })
+            return
+          }
+          logEvent(silent, { event: 'streamable_get', ip, sessionId: streamableSessionId })
+          await transport.handleRequest(req, res)
         }
         else {
           const transport = new SSEServerTransport('/mcp', res)
@@ -296,9 +322,26 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
           logEvent(silent, { event: 'sse_connected', ip, sessionId, headers: req.headers })
         }
       }
+      else if (req.method === 'DELETE') {
+        // Streamable HTTP session termination — client signals it's done with the session.
+        if (streamableSessionId) {
+          const transport = streamableSessions.get(streamableSessionId)
+          if (transport) {
+            logEvent(silent, { event: 'streamable_delete', ip, sessionId: streamableSessionId })
+            await transport.handleRequest(req, res)
+          }
+          else {
+            jsonResponse(res, 404, { error: 'Unknown session' })
+          }
+        }
+        else {
+          jsonResponse(res, 400, { error: 'Mcp-Session-Id header required for DELETE' })
+        }
+      }
       else if (req.method === 'POST') {
         const sseSessionId = url.searchParams.get('sessionId')
         if (sseSessionId) {
+          // Legacy SSE POST: messages flow over the open SSE stream identified by sessionId query param.
           const transport = sseSessions.get(sseSessionId)
           if (!transport) {
             logEvent(silent, { event: 'sse_post_invalid_session', ip, sessionId: sseSessionId })
@@ -315,10 +358,50 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
           }
         }
         else {
-          logEvent(silent, { event: 'streamable_post', ip })
+          // Streamable HTTP POST: either an initialize bootstrap (no Mcp-Session-Id yet)
+          // or a follow-up request on an existing session (Mcp-Session-Id in headers).
+          const body = await readRequestBody(req)
           const release = await semaphore.acquire()
           try {
-            await streamableTransport.handleRequest(req, res)
+            if (streamableSessionId) {
+              const transport = streamableSessions.get(streamableSessionId)
+              if (!transport) {
+                logEvent(silent, { event: 'streamable_post_invalid_session', ip, sessionId: streamableSessionId })
+                jsonResponse(res, 404, { error: 'Unknown session' })
+                return
+              }
+              logEvent(silent, { event: 'streamable_post', ip, sessionId: streamableSessionId })
+              await transport.handleRequest(req, res, body)
+            }
+            else if (isInitializeRequest(body)) {
+              // Per-session transport: each initialize starts a fresh session with its own
+              // server instance. The SDK assigns the session ID and we register the transport
+              // in the map via onsessioninitialized so subsequent POST/GET/DELETE can find it.
+              const transport = new StreamableHTTPServerTransport({
+                sessionIdGenerator: () => randomUUID(),
+                onsessioninitialized: (sid) => {
+                  streamableSessions.set(sid, transport)
+                  logEvent(silent, { event: 'streamable_session_initialized', sessionId: sid })
+                },
+              })
+              transport.onclose = () => {
+                if (transport.sessionId) {
+                  streamableSessions.delete(transport.sessionId)
+                  logEvent(silent, { event: 'streamable_session_closed', sessionId: transport.sessionId })
+                }
+              }
+              const sessionServer = createServer()
+              await sessionServer.connect(transport)
+              logEvent(silent, { event: 'streamable_init', ip })
+              await transport.handleRequest(req, res, body)
+            }
+            else {
+              jsonResponse(res, 400, {
+                jsonrpc: '2.0',
+                error: { code: -32600, message: 'Invalid Request: missing Mcp-Session-Id and not an initialize request' },
+                id: null,
+              })
+            }
           }
           finally {
             release()
@@ -362,7 +445,10 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       if (pruneTimer) {
         clearInterval(pruneTimer)
       }
-      await streamableTransport.close()
+      for (const transport of streamableSessions.values()) {
+        await transport.close()
+      }
+      streamableSessions.clear()
       for (const transport of sseSessions.values()) {
         await transport.close()
       }

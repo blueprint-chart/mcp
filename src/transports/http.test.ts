@@ -88,16 +88,39 @@ describe('http transport', () => {
     })
   })
 
-  it('rejects /mcp POST without sessionId', async () => {
+  it('rejects /mcp POST without sessionId and not an initialize request', async () => {
     await withServer({ port: 0 }, async (url) => {
       const res = await fetch(`${url}/mcp`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'accept': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
       })
-      // The transport returns 406 (Not Acceptable) because it's not an initialization request
-      // and lacks a session ID header.
-      expect(res.status).toBe(406)
+      // Non-initialize POSTs without an Mcp-Session-Id header are invalid; the
+      // transport returns 400 Bad Request with a JSON-RPC error envelope.
+      expect(res.status).toBe(400)
+      const body = await res.json() as { error?: { code?: number, message?: string } }
+      expect(body.error?.code).toBe(-32600)
+      expect(body.error?.message).toMatch(/Mcp-Session-Id|initialize/i)
+    })
+  })
+
+  it('accepts /mcp POST initialize and returns a Mcp-Session-Id', async () => {
+    await withServer({ port: 0 }, async (url) => {
+      const res = await fetch(`${url}/mcp`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'accept': 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 't', version: '0' } },
+        }),
+      })
+      expect(res.status).toBe(200)
+      expect(res.headers.get('mcp-session-id')).toMatch(/^[0-9a-f-]{36}$/)
     })
   })
 
