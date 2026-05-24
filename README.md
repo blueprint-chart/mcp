@@ -1,6 +1,21 @@
-# @blueprint-chart/mcp
+<p align="center">
+  <a href="https://blueprintchart.com" align="center">
+    <img src="https://raw.githubusercontent.com/blueprint-chart/blueprint-chart/main/packages/editor/src/assets/images/blueprint-chart-logo.svg" width="120" alt="blueprint-chart">
+  </a>
+</p>
+<p align="center"><strong>Model Context Protocol server for authoring Blueprint Chart <code>.bpc</code> files with LLMs — grounded in real dataviz pedagogy with a tight parse + render feedback loop.</strong></p>
 
-Model Context Protocol server for authoring [Blueprint Chart](https://blueprintchart.com) `.bpc` files with LLMs.
+<div align="center">
+
+|      | Status |
+| ---: | :--- |
+| **CI checks** | [![Github Actions](https://img.shields.io/github/actions/workflow/status/blueprint-chart/mcp/ci.yml?style=flat-square)](https://github.com/blueprint-chart/mcp/actions/workflows/ci.yml) |
+| **Latest version** | [![Latest version](https://img.shields.io/npm/v/@blueprint-chart/mcp?style=flat-square&color=success)](https://www.npmjs.com/package/@blueprint-chart/mcp) |
+|   **Release date** | [![Release date](https://img.shields.io/github/release-date/blueprint-chart/mcp?style=flat-square&color=success)](https://github.com/blueprint-chart/mcp/releases/latest) |
+|    **Open issues** | [![Open issues](https://img.shields.io/github/issues/blueprint-chart/mcp?style=flat-square&color=success)](https://github.com/blueprint-chart/mcp/issues/) |
+|  **Websites** | [![Editor](https://img.shields.io/badge/Editor-2563A0?style=flat-square)](https://blueprintchart.com) [![Docs](https://img.shields.io/badge/Docs-2563A0?style=flat-square)](https://docs.blueprintchart.com) |
+
+</div>
 
 The MCP exposes Blueprint Chart's dataviz handbook, DSL grammar reference, chart-type docs, and canonical samples as MCP resources, plus four deterministic tools: `validate_dsl`, `inspect_dsl`, `recommend_chart_type`, and `render`. Your LLM writes the `.bpc`; the MCP grounds it in real dataviz pedagogy and gives it a tight feedback loop.
 
