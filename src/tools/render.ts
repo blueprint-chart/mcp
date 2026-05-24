@@ -26,7 +26,9 @@ export interface RenderOutput {
  * namespace on the way to the rasterizer so the PNG path succeeds.
  */
 function ensureSvgNamespace(svg: string): string {
-  if (svg.includes('xmlns="http://www.w3.org/2000/svg"')) return svg
+  if (svg.includes('xmlns="http://www.w3.org/2000/svg"')) {
+    return svg
+  }
   return svg.replace(/^<svg(?=\s|>)/, '<svg xmlns="http://www.w3.org/2000/svg"')
 }
 
@@ -48,7 +50,9 @@ export async function renderTool(input: unknown): Promise<ToolResult<RenderOutpu
   const { source, format, scene, width, height } = parsed.data
 
   const parseResult = parseDsl(source)
-  if (!parseResult.ok) return parseResult
+  if (!parseResult.ok) {
+    return parseResult
+  }
 
   let svg: string
   try {

@@ -22,7 +22,8 @@ async function callOverHttp() {
     const client = new Client({ name: 't', version: '0' }, { capabilities: {} })
     await client.connect(transport)
     return await client.callTool({ name: 'validate_dsl', arguments: { source: samples[0]!.dsl } })
-  } finally {
+  }
+  finally {
     await handle.close()
   }
 }

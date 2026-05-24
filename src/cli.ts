@@ -9,12 +9,16 @@ interface CliConfig {
 }
 
 function parseBool(value: string | undefined): boolean {
-  if (!value) return false
+  if (!value) {
+    return false
+  }
   return value === '1' || value.toLowerCase() === 'true'
 }
 
 function parseList(value: string | undefined): string[] | undefined {
-  if (!value) return undefined
+  if (!value) {
+    return undefined
+  }
   return value.split(',').map(s => s.trim()).filter(Boolean)
 }
 
@@ -95,7 +99,9 @@ Environment variables (HTTP mode):
 function installSignalHandlers(close: () => Promise<void>): void {
   let shuttingDown = false
   const handler = (signal: NodeJS.Signals): void => {
-    if (shuttingDown) return
+    if (shuttingDown) {
+      return
+    }
     shuttingDown = true
     close()
       .catch((err: unknown) => {

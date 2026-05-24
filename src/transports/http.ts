@@ -125,7 +125,9 @@ function applyCors(res: ServerResponse, origin: string | undefined, allowed: str
 }
 
 function logEvent(silent: boolean, fields: Record<string, unknown>): void {
-  if (silent) return
+  if (silent) {
+    return
+  }
   process.stderr.write(`${JSON.stringify({ ts: new Date().toISOString(), ...fields })}\n`)
 }
 
@@ -232,7 +234,9 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
   return {
     url,
     close: async () => {
-      if (pruneTimer) clearInterval(pruneTimer)
+      if (pruneTimer) {
+        clearInterval(pruneTimer)
+      }
       await transport.close()
       httpServer.closeAllConnections()
       await new Promise<void>((resolve, reject) =>

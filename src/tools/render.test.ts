@@ -27,7 +27,9 @@ describe('render', () => {
   it('forwards parse errors', async () => {
     const r = await renderTool({ source: '@@@' })
     expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.code).toBe('E_PARSE')
+    if (!r.ok) {
+      expect(r.code).toBe('E_PARSE')
+    }
   })
 
   it('returns E_INPUT for invalid zod input', async () => {

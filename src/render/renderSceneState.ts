@@ -65,15 +65,19 @@ export function renderSceneState(source: string, opts: RenderSceneStateOptions):
         transition: false,
         theme: opts.theme,
       })
-    } finally {
+    }
+    finally {
       for (const key of FORWARDED_GLOBALS) {
         globals[key] = prev[key]
       }
     }
     const svg = env.serialize()
-    if (!svg) throw new Error('renderBpc produced no SVG output')
+    if (!svg) {
+      throw new Error('renderBpc produced no SVG output')
+    }
     return svg
-  } finally {
+  }
+  finally {
     env.cleanup()
   }
 }

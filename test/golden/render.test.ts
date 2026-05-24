@@ -14,7 +14,9 @@ const PICK = [
 describe('golden render', () => {
   for (const id of PICK) {
     const sample = samples.find(s => s.id === id)
-    if (!sample) continue
+    if (!sample) {
+      continue
+    }
     it(`renders stable SVG for sample "${id}"`, () => {
       const svg = renderSceneState(sample.dsl, { sceneIndex: 0, width: 800, height: 500 })
       // Normalize transient bits: D3-generated IDs and `url(#…)` refs.

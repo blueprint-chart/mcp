@@ -19,7 +19,7 @@ describe('http transport', () => {
     await withServer({ port: 0 }, async (url) => {
       const res = await fetch(`${url}/mcp`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        headers: { 'content-type': 'application/json', 'accept': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
       })
       expect(res.status).toBeLessThan(500)
@@ -54,7 +54,7 @@ describe('http transport', () => {
     await withServer({ port: 0, authToken: 'secret' }, async (url) => {
       const res = await fetch(`${url}/mcp`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        headers: { 'content-type': 'application/json', 'accept': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
       })
       expect(res.status).toBe(401)
@@ -67,8 +67,8 @@ describe('http transport', () => {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          accept: 'application/json',
-          authorization: 'Bearer secret',
+          'accept': 'application/json',
+          'authorization': 'Bearer secret',
         },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
       })
@@ -81,7 +81,7 @@ describe('http transport', () => {
     await withServer({ port: 0, rateLimitPerMinute: 2 }, async (url) => {
       const hit = async () => fetch(`${url}/mcp`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        headers: { 'content-type': 'application/json', 'accept': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
       })
       const first = await hit()
