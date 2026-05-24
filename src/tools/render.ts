@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { ChartNode } from '@blueprint-chart/lib'
 import { parseDsl } from '../parse'
 import { validateAst } from '../dsl/validate'
 import { diagnoseRender } from '../render/diagnose'
@@ -8,7 +9,7 @@ import { ErrorCode, toolError, toolOk, type ToolErrorEntry, type ToolResult } fr
 
 export const RenderInputSchema = z.object({
   source: z.string(),
-  format: z.enum(['svg', 'png']).default('svg'),
+  format: z.enum(['svg', 'png', 'html']).default('svg'),
   scene: z.number().int().nonnegative().optional(),
   width: z.number().int().positive().default(800),
   height: z.number().int().positive().default(500),
@@ -18,7 +19,16 @@ export type RenderInput = z.infer<typeof RenderInputSchema>
 export interface RenderOutput {
   svg: string
   png?: string
-  mimeType: 'image/svg+xml' | 'image/png'
+  html?: string
+  frame: {
+    title?: string
+    description?: string
+    byline?: string
+    source?: string
+    sourceUrl?: string
+    note?: string
+  }
+  mimeType: 'image/svg+xml' | 'image/png' | 'text/html'
 }
 
 function ensureSvgNamespace(svg: string): string {
@@ -26,6 +36,18 @@ function ensureSvgNamespace(svg: string): string {
     return svg
   }
   return svg.replace(/^<svg(?=\s|>)/, '<svg xmlns="http://www.w3.org/2000/svg"')
+}
+
+const FRAME_KEYS = ['title', 'description', 'byline', 'source', 'sourceUrl', 'note'] as const
+
+function extractFrameMetadata(ast: ChartNode): RenderOutput['frame'] {
+  const frame: RenderOutput['frame'] = {}
+  for (const prop of ast.properties ?? []) {
+    if ((FRAME_KEYS as readonly string[]).includes(prop.key)) {
+      frame[prop.key as keyof typeof frame] = String(prop.value).replace(/^"|"$/g, '')
+    }
+  }
+  return frame
 }
 
 export async function renderTool(input: unknown): Promise<ToolResult<RenderOutput>> {
@@ -69,10 +91,15 @@ export async function renderTool(input: unknown): Promise<ToolResult<RenderOutpu
     return toolError(ErrorCode.E_RENDER, entries)
   }
 
+  const frame = extractFrameMetadata(parseResult.data.ast)
+
   // Layer 3: actual render.
   let svg: string
+  let html: string | undefined
   try {
-    svg = renderSceneState(source, { sceneIndex: scene, width, height })
+    const result = renderSceneState(source, { sceneIndex: scene, width, height })
+    svg = result.svg
+    html = result.html
   }
   catch (err) {
     return toolError(ErrorCode.E_RENDER, [{
@@ -83,12 +110,24 @@ export async function renderTool(input: unknown): Promise<ToolResult<RenderOutpu
   }
 
   if (format === 'svg') {
-    return toolOk({ svg, mimeType: 'image/svg+xml' })
+    return toolOk({ svg, frame, mimeType: 'image/svg+xml' })
   }
 
+  if (format === 'html') {
+    if (!html) {
+      return toolError(ErrorCode.E_RENDER, [{
+        code: 'E_FRAME_UNAVAILABLE',
+        path: 'render',
+        message: 'HTML frame was not produced by the renderer',
+      }])
+    }
+    return toolOk({ svg, html, frame, mimeType: 'text/html' })
+  }
+
+  // format === 'png'
   try {
     const png = await rasterizeToPng(ensureSvgNamespace(svg), { width })
-    return toolOk({ svg, png: png.toString('base64'), mimeType: 'image/png' })
+    return toolOk({ svg, png: png.toString('base64'), frame, mimeType: 'image/png' })
   }
   catch (err) {
     return toolError(ErrorCode.E_RENDER, [{

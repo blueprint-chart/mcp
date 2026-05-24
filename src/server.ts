@@ -43,7 +43,7 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: args => recommendChartType(args),
   },
   render: {
-    description: 'Render a .bpc source to SVG (default) or PNG. Accepts scene index, width, height.',
+    description: 'Render a .bpc source to SVG (default), PNG, or HTML. Always returns the structured frame metadata (title, description, byline, source, sourceUrl, note) so an LLM can compose chart metadata into its response. Use format=html for a self-contained HTML chart card.',
     inputSchema: RenderInputSchema,
     handler: args => renderTool(args),
   },

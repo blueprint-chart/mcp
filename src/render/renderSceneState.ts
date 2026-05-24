@@ -9,6 +9,11 @@ export interface RenderSceneStateOptions {
   theme?: string
 }
 
+export interface RenderSceneStateResult {
+  svg: string
+  html?: string
+}
+
 /**
  * Globals that `@blueprint-chart/lib` (and the D3 code it bundles) reads at
  * call time. Verified against `node_modules/@blueprint-chart/lib/dist/index.js`
@@ -47,7 +52,7 @@ type GlobalsBag = Record<ForwardedKey, unknown>
  * Throws when `renderBpc` cannot produce SVG output (invalid source, etc.) —
  * callers (the `render` tool) catch and translate to a structured ToolResult.
  */
-export function renderSceneState(source: string, opts: RenderSceneStateOptions): string {
+export function renderSceneState(source: string, opts: RenderSceneStateOptions): RenderSceneStateResult {
   const env = createJsdomEnv({ width: opts.width, height: opts.height })
   try {
     installTextShim(env.window)
@@ -61,7 +66,7 @@ export function renderSceneState(source: string, opts: RenderSceneStateOptions):
     try {
       renderBpc(env.container, source, {
         sceneIndex: opts.sceneIndex,
-        thumbnail: true,
+        thumbnail: false,
         transition: false,
         theme: opts.theme,
       })
@@ -71,11 +76,12 @@ export function renderSceneState(source: string, opts: RenderSceneStateOptions):
         globals[key] = prev[key]
       }
     }
-    const svg = env.serialize()
+    const svg = env.serializeSvg()
     if (!svg) {
       throw new Error('renderBpc produced no SVG output')
     }
-    return svg
+    const html = env.serializeFrame()
+    return { svg, html }
   }
   finally {
     env.cleanup()

@@ -3,13 +3,15 @@ import { samples } from '@blueprint-chart/lib'
 import { renderTool } from './render'
 
 describe('render', () => {
-  it('returns SVG by default', async () => {
+  it('returns pure SVG by default', async () => {
     const r = await renderTool({ source: samples[0]!.dsl })
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.data.mimeType).toBe('image/svg+xml')
       expect(r.data.svg).toMatch(/^<svg/)
       expect(r.data.png).toBeUndefined()
+      expect(r.data.html).toBeUndefined()
+      expect(r.data.frame).toBeDefined()
     }
   })
 
@@ -21,6 +23,7 @@ describe('render', () => {
       expect(r.data.svg).toMatch(/^<svg/)
       expect(r.data.png).toBeTypeOf('string') // base64
       expect(r.data.png!.length).toBeGreaterThan(100)
+      expect(r.data.frame).toBeDefined()
     }
   })
 
@@ -38,6 +41,44 @@ describe('render', () => {
     if (!r.ok) {
       expect(r.code).toBe('E_INPUT')
       expect(r.errors.length).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('render — frame defaults', () => {
+  it('format=svg returns pure SVG without HTML wrapper', async () => {
+    const { samples } = await import('@blueprint-chart/lib')
+    const sample = samples.find(s => s.id === 'letter-frequency')!
+    const r = await renderTool({ source: sample.dsl, format: 'svg' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.svg).toMatch(/^<svg/)
+      expect(r.data.svg).not.toContain('<div class="bc-frame"')
+      expect(r.data.html).toBeUndefined()
+    }
+  })
+
+  it('format=svg on letter-frequency returns correct frame.title', async () => {
+    const { samples } = await import('@blueprint-chart/lib')
+    const sample = samples.find(s => s.id === 'letter-frequency')!
+    const r = await renderTool({ source: sample.dsl, format: 'svg' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.frame.title).toBe('E is the most frequent letter in English')
+    }
+  })
+
+  it('format=html returns html containing bc-frame and svg', async () => {
+    const { samples } = await import('@blueprint-chart/lib')
+    const sample = samples.find(s => s.id === 'letter-frequency')!
+    const r = await renderTool({ source: sample.dsl, format: 'html' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.mimeType).toBe('text/html')
+      expect(r.data.html).toContain('<div class="bc-frame"')
+      expect(r.data.html).toContain('<svg')
+      expect(r.data.svg).toMatch(/^<svg/)
+      expect(r.data.frame).toBeDefined()
     }
   })
 })
@@ -72,11 +113,14 @@ describe('render — structured diagnostics', () => {
     }
   })
 
-  it('renders every sample to SVG', async () => {
+  it('renders every sample to SVG and provides frame metadata', async () => {
     const { samples } = await import('@blueprint-chart/lib')
     for (const s of samples) {
       const r = await renderTool({ source: s.dsl, format: 'svg' })
       expect(r.ok, `sample ${s.id}`).toBe(true)
+      if (r.ok) {
+        expect(r.data.frame, `sample ${s.id} frame`).toBeDefined()
+      }
     }
   })
 })
