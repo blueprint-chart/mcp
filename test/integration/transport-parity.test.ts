@@ -16,7 +16,7 @@ async function callInMemory() {
 }
 
 async function callOverHttp() {
-  const handle = await startHttp({ port: 0 })
+  const handle = await startHttp({ port: 0, silent: true })
   try {
     const transport = new StreamableHTTPClientTransport(new URL(`${handle.url}/mcp`))
     const client = new Client({ name: 't', version: '0' }, { capabilities: {} })
