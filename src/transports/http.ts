@@ -1,3 +1,4 @@
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import {
   createServer as createHttpServer,
@@ -11,13 +12,13 @@ import { createServer } from '../server.js'
 export interface StartHttpOptions {
   port: number
   host?: string
-  /** If set, require `Authorization: Bearer <token>` on every /mcp request. */
+  /** If set, require `Authorization: Bearer <token>` on every request. */
   authToken?: string
   /** Comma-resolved CORS allowlist. `'*'` allows any origin. Default: `'*'`. */
   allowedOrigins?: string[] | '*'
   /** Read `X-Forwarded-For` for client IP (enable when behind a reverse proxy). */
   trustProxy?: boolean
-  /** Cap on concurrent `POST /mcp` requests. Default: 16. */
+  /** Cap on concurrent tool calls. Default: 16. */
   maxConcurrentRequests?: number
   /** Per-IP token-bucket rate limit. Disabled when undefined or 0. */
   rateLimitPerMinute?: number
@@ -140,11 +141,13 @@ function jsonResponse(res: ServerResponse, status: number, body: unknown): void 
 }
 
 export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
-  const transport = new StreamableHTTPServerTransport({
+  const mcpServer = createServer()
+  const sseSessions = new Map<string, SSEServerTransport>()
+
+  const streamableTransport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
   })
-  const server = createServer()
-  await server.connect(transport)
+  await mcpServer.connect(streamableTransport)
 
   const allowedOrigins = opts.allowedOrigins ?? '*'
   const trustProxy = opts.trustProxy ?? false
@@ -185,7 +188,8 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       return
     }
 
-    if (!req.url?.startsWith('/mcp')) {
+    const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
+    if (url.pathname !== '/mcp') {
       jsonResponse(res, 404, { error: 'Not Found' })
       return
     }
@@ -208,11 +212,52 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       return
     }
 
-    // Concurrency cap on POST (tool calls); GET streams unrestricted
-    const cap = req.method === 'POST'
-    const release = cap ? await semaphore.acquire() : undefined
     try {
-      await transport.handleRequest(req, res)
+      if (req.method === 'GET') {
+        // Distinguish between Streamable HTTP (w/ session header) and legacy SSE (w/o session header)
+        if (req.headers['mcp-session-id']) {
+          await streamableTransport.handleRequest(req, res)
+        }
+        else {
+          const transport = new SSEServerTransport('/mcp', res)
+          const sessionId = transport.sessionId
+          sseSessions.set(sessionId, transport)
+          transport.onclose = () => sseSessions.delete(sessionId)
+          // Connect a fresh server instance per SSE session to avoid state contamination
+          const sessionServer = createServer()
+          await sessionServer.connect(transport)
+          logEvent(silent, { event: 'sse_connected', ip, sessionId })
+        }
+      }
+      else if (req.method === 'POST') {
+        const sseSessionId = url.searchParams.get('sessionId')
+        if (sseSessionId) {
+          const transport = sseSessions.get(sseSessionId)
+          if (!transport) {
+            jsonResponse(res, 400, { error: 'Invalid sessionId' })
+            return
+          }
+          const release = await semaphore.acquire()
+          try {
+            await transport.handlePostMessage(req, res)
+          }
+          finally {
+            release()
+          }
+        }
+        else {
+          const release = await semaphore.acquire()
+          try {
+            await streamableTransport.handleRequest(req, res)
+          }
+          finally {
+            release()
+          }
+        }
+      }
+      else {
+        jsonResponse(res, 405, { error: 'Method Not Allowed' })
+      }
     }
     catch (err) {
       const message = err instanceof Error ? err.message : String(err)
@@ -222,7 +267,6 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       }
     }
     finally {
-      release?.()
       logEvent(silent, {
         event: 'request',
         ip,
@@ -247,7 +291,11 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       if (pruneTimer) {
         clearInterval(pruneTimer)
       }
-      await transport.close()
+      await streamableTransport.close()
+      for (const transport of sseSessions.values()) {
+        await transport.close()
+      }
+      sseSessions.clear()
       httpServer.closeAllConnections()
       await new Promise<void>((resolve, reject) =>
         httpServer.close(err => (err ? reject(err) : resolve())),

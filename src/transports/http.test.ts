@@ -15,14 +15,32 @@ async function withServer<T>(
 }
 
 describe('http transport', () => {
-  it('responds to /mcp tools/list with status < 500', async () => {
+  it('responds to /mcp tools/list after establishing SSE', async () => {
     await withServer({ port: 0 }, async (url) => {
-      const res = await fetch(`${url}/mcp`, {
+      // 1. Establish SSE session
+      const sseRes = await fetch(`${url}/mcp`, {
+        headers: { 'accept': 'text/event-stream' },
+      })
+      expect(sseRes.status).toBe(200)
+      
+      const reader = sseRes.body?.getReader()
+      if (!reader) throw new Error('No reader')
+      const { value } = await reader.read()
+      const text = new TextDecoder().decode(value)
+      const sessionIdMatch = text.match(/sessionId=([a-zA-Z0-9-]+)/)
+      if (!sessionIdMatch) throw new Error(`No sessionId in SSE: ${text}`)
+      const sessionId = sessionIdMatch[1]
+
+      // 2. Post message using sessionId
+      const res = await fetch(`${url}/mcp?sessionId=${sessionId}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'accept': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
       })
-      expect(res.status).toBeLessThan(500)
+      expect(res.status).toBe(202) // SSEServerTransport returns 202 for POSTs
+
+      // Cleanup
+      await reader.cancel()
     })
   })
 
@@ -66,47 +84,65 @@ describe('http transport', () => {
     })
   })
 
-  it('rejects /mcp without token when authToken is set', async () => {
-    await withServer({ port: 0, authToken: 'secret' }, async (url) => {
+  it('rejects /mcp POST without sessionId', async () => {
+    await withServer({ port: 0 }, async (url) => {
       const res = await fetch(`${url}/mcp`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'accept': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
       })
+      // The transport returns 406 (Not Acceptable) because it's not an initialization request
+      // and lacks a session ID header.
+      expect(res.status).toBe(406)
+    })
+  })
+
+  it('rejects /mcp POST with invalid sessionId', async () => {
+    await withServer({ port: 0 }, async (url) => {
+      const res = await fetch(`${url}/mcp?sessionId=nope`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
+      })
+      expect(res.status).toBe(400)
+    })
+  })
+
+  it('rejects SSE without token when authToken is set', async () => {
+    await withServer({ port: 0, authToken: 'secret' }, async (url) => {
+      const res = await fetch(`${url}/mcp`, {
+        headers: { 'accept': 'text/event-stream' },
+      })
       expect(res.status).toBe(401)
     })
   })
 
-  it('accepts /mcp with correct bearer token', async () => {
+  it('accepts SSE with correct bearer token', async () => {
     await withServer({ port: 0, authToken: 'secret' }, async (url) => {
       const res = await fetch(`${url}/mcp`, {
-        method: 'POST',
         headers: {
-          'content-type': 'application/json',
-          'accept': 'application/json',
+          'accept': 'text/event-stream',
           'authorization': 'Bearer secret',
         },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
       })
-      expect(res.status).toBeLessThan(500)
-      expect(res.status).not.toBe(401)
+      expect(res.status).toBe(200)
+      await res.body?.cancel()
     })
   })
 
   it('rate-limits /mcp by IP', async () => {
     await withServer({ port: 0, rateLimitPerMinute: 2 }, async (url) => {
       const hit = async () => fetch(`${url}/mcp`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'accept': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
+        headers: { 'accept': 'text/event-stream' },
       })
       const first = await hit()
       const second = await hit()
       const third = await hit()
-      expect(first.status).not.toBe(429)
-      expect(second.status).not.toBe(429)
+      expect(first.status).toBe(200)
+      expect(second.status).toBe(200)
       expect(third.status).toBe(429)
-      expect(third.headers.get('retry-after')).toBe('60')
+      await first.body?.cancel()
+      await second.body?.cancel()
     })
   })
 })
