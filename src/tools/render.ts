@@ -1,8 +1,10 @@
 import { z } from 'zod'
 import { parseDsl } from '../parse'
+import { validateAst } from '../dsl/validate'
+import { diagnoseRender } from '../render/diagnose'
 import { renderSceneState } from '../render/renderSceneState'
 import { rasterizeToPng } from '../render/rasterize'
-import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
+import { ErrorCode, toolError, toolOk, type ToolErrorEntry, type ToolResult } from '../errors'
 
 export const RenderInputSchema = z.object({
   source: z.string(),
@@ -19,12 +21,6 @@ export interface RenderOutput {
   mimeType: 'image/svg+xml' | 'image/png'
 }
 
-/**
- * `renderSceneState` returns the SVG fragment as produced by jsdom's
- * `outerHTML`, which omits the default SVG namespace. resvg's strict parser
- * rejects that as "the document does not have a root node". Inject the
- * namespace on the way to the rasterizer so the PNG path succeeds.
- */
 function ensureSvgNamespace(svg: string): string {
   if (svg.includes('xmlns="http://www.w3.org/2000/svg"')) {
     return svg
@@ -32,13 +28,6 @@ function ensureSvgNamespace(svg: string): string {
   return svg.replace(/^<svg(?=\s|>)/, '<svg xmlns="http://www.w3.org/2000/svg"')
 }
 
-/**
- * Composes `parseDsl`, `renderSceneState`, and `rasterizeToPng` into the
- * `render` MCP tool. Always returns SVG; when `format=png`, also includes a
- * base64-encoded PNG. If rasterisation fails we surface `E_RENDER` — the SVG
- * is discarded in that branch to keep the union shape (ToolResult is either
- * ok-with-data or err-with-errors, no partial-success carrier).
- */
 export async function renderTool(input: unknown): Promise<ToolResult<RenderOutput>> {
   const parsed = RenderInputSchema.safeParse(input)
   if (!parsed.success) {
@@ -54,14 +43,43 @@ export async function renderTool(input: unknown): Promise<ToolResult<RenderOutpu
     return parseResult
   }
 
+  // Layer 1: semantic validation (chart type, properties, empty data).
+  const issues = validateAst(parseResult.data.ast)
+  if (issues.length > 0) {
+    const entries: ToolErrorEntry[] = issues.map(i => ({
+      code: i.code,
+      path: i.path,
+      message: i.message,
+      suggestion: i.suggestion,
+      context: i.context,
+    }))
+    return toolError(ErrorCode.E_SEMANTIC, entries)
+  }
+
+  // Layer 2: render-state diagnostic (colorize/highlight resolution, scene index).
+  const diag = diagnoseRender(source, { sceneIndex: scene })
+  if (!diag.ok) {
+    const entries: ToolErrorEntry[] = diag.diagnostics.map(d => ({
+      code: d.code,
+      path: d.path,
+      message: d.message,
+      suggestion: d.suggestion,
+      context: d.context,
+    }))
+    return toolError(ErrorCode.E_RENDER, entries)
+  }
+
+  // Layer 3: actual render.
   let svg: string
   try {
     svg = renderSceneState(source, { sceneIndex: scene, width, height })
   }
   catch (err) {
-    return toolError(ErrorCode.E_RENDER, [
-      { path: 'render', message: err instanceof Error ? err.message : String(err) },
-    ])
+    return toolError(ErrorCode.E_RENDER, [{
+      code: 'E_RENDER_UNKNOWN',
+      path: 'render',
+      message: err instanceof Error ? err.message : String(err),
+    }])
   }
 
   if (format === 'svg') {
@@ -73,8 +91,10 @@ export async function renderTool(input: unknown): Promise<ToolResult<RenderOutpu
     return toolOk({ svg, png: png.toString('base64'), mimeType: 'image/png' })
   }
   catch (err) {
-    return toolError(ErrorCode.E_RENDER, [
-      { path: 'rasterize', message: err instanceof Error ? err.message : String(err) },
-    ])
+    return toolError(ErrorCode.E_RENDER, [{
+      code: 'E_RASTERIZE',
+      path: 'rasterize',
+      message: err instanceof Error ? err.message : String(err),
+    }])
   }
 }
