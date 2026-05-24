@@ -122,8 +122,8 @@ function applyCors(res: ServerResponse, origin: string | undefined, allowed: str
     res.setHeader('Access-Control-Allow-Origin', origin)
     res.setHeader('Vary', 'Origin')
   }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Mcp-Session-Id, Accept')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Mcp-Session-Id, Mcp-Protocol-Version, Accept')
   res.setHeader('Access-Control-Max-Age', '86400')
 }
 
@@ -169,6 +169,7 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
 
     // CORS preflight
     if (req.method === 'OPTIONS') {
+      logEvent(silent, { event: 'preflight', ip, headers: req.headers })
       res.statusCode = 204
       res.end()
       return
@@ -182,6 +183,7 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
 
     // Root redirect
     if (req.url === '/' && opts.rootRedirectUrl) {
+      logEvent(silent, { event: 'root_redirect', ip, to: opts.rootRedirectUrl })
       res.statusCode = 302
       res.setHeader('Location', opts.rootRedirectUrl)
       res.end()
@@ -189,7 +191,11 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
     }
 
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
-    if (url.pathname !== '/mcp') {
+    const pathname = url.pathname.replace(/\/$/, '') // Normalize trailing slash
+
+    if (pathname !== '/mcp') {
+      logEvent(silent, { event: 'incoming_request', method: req.method, path: url.pathname, ip, headers: req.headers })
+      logEvent(silent, { event: 'path_not_found', path: url.pathname, normalized: pathname, ip })
       jsonResponse(res, 404, { error: 'Not Found' })
       return
     }
@@ -198,7 +204,7 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
     if (opts.authToken) {
       const auth = req.headers.authorization
       if (auth !== `Bearer ${opts.authToken}`) {
-        logEvent(silent, { event: 'auth_rejected', ip, method: req.method })
+        logEvent(silent, { event: 'auth_rejected', ip, method: req.method, headers: req.headers })
         jsonResponse(res, 401, { error: 'Unauthorized' })
         return
       }
@@ -216,17 +222,21 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       if (req.method === 'GET') {
         // Distinguish between Streamable HTTP (w/ session header) and legacy SSE (w/o session header)
         if (req.headers['mcp-session-id']) {
+          logEvent(silent, { event: 'streamable_get', ip, sessionId: req.headers['mcp-session-id'] })
           await streamableTransport.handleRequest(req, res)
         }
         else {
           const transport = new SSEServerTransport('/mcp', res)
           const sessionId = transport.sessionId
           sseSessions.set(sessionId, transport)
-          transport.onclose = () => sseSessions.delete(sessionId)
+          transport.onclose = () => {
+            logEvent(silent, { event: 'sse_closed', sessionId })
+            sseSessions.delete(sessionId)
+          }
           // Connect a fresh server instance per SSE session to avoid state contamination
           const sessionServer = createServer()
           await sessionServer.connect(transport)
-          logEvent(silent, { event: 'sse_connected', ip, sessionId })
+          logEvent(silent, { event: 'sse_connected', ip, sessionId, headers: req.headers })
         }
       }
       else if (req.method === 'POST') {
@@ -234,9 +244,11 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
         if (sseSessionId) {
           const transport = sseSessions.get(sseSessionId)
           if (!transport) {
+            logEvent(silent, { event: 'sse_post_invalid_session', ip, sessionId: sseSessionId })
             jsonResponse(res, 400, { error: 'Invalid sessionId' })
             return
           }
+          logEvent(silent, { event: 'sse_post', ip, sessionId: sseSessionId })
           const release = await semaphore.acquire()
           try {
             await transport.handlePostMessage(req, res)
@@ -246,6 +258,7 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
           }
         }
         else {
+          logEvent(silent, { event: 'streamable_post', ip })
           const release = await semaphore.acquire()
           try {
             await streamableTransport.handleRequest(req, res)
@@ -261,14 +274,15 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
     }
     catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      logEvent(silent, { event: 'transport_error', ip, method: req.method, message })
+      const stack = err instanceof Error ? err.stack : undefined
+      logEvent(silent, { event: 'transport_error', ip, method: req.method, message, stack })
       if (!res.headersSent) {
         jsonResponse(res, 500, { error: 'Internal Server Error' })
       }
     }
     finally {
       logEvent(silent, {
-        event: 'request',
+        event: 'request_finished',
         ip,
         method: req.method,
         path: req.url,
