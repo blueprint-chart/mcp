@@ -19,9 +19,9 @@ In **Variables**, set:
 | `MCP_HTTP` | `1` | Run in HTTP mode. (Already baked into the Dockerfile, but explicit is fine.) |
 | `MCP_HOST` | `0.0.0.0` | Bind to all interfaces. (Already baked in.) |
 | `MCP_TRUST_PROXY` | `1` | Read `X-Forwarded-For` for client IPs. **Required** behind Railway's proxy. |
-| `MCP_AUTH_TOKEN` | *(generate a 32+ char random secret)* | Require `Authorization: Bearer <token>` on every `/mcp` call. **Strongly recommended.** |
-| `MCP_ALLOWED_ORIGINS` | `https://claude.ai,https://chatgpt.com` | Restrict CORS. Use `*` only if you need open access. |
-| `MCP_RATE_LIMIT_PER_MINUTE` | `60` | Per-IP rate limit. Start at 60; raise if customers complain. |
+| `MCP_AUTH_TOKEN` | *(unset)* | Leave unset for the default public deployment. See [Authentication](#authentication) below if you ever want to restrict access. |
+| `MCP_ALLOWED_ORIGINS` | `*` | CORS allowlist. `*` is fine for a public deployment; tighten to specific origins if you go private. |
+| `MCP_RATE_LIMIT_PER_MINUTE` | `60` | Per-IP rate limit. Critical when the endpoint is public — start at 60; raise if real users complain. |
 | `MCP_MAX_CONCURRENT_REQUESTS` | `16` | Cap on simultaneous POSTs. 16 is a safe default for a single 1 vCPU instance. Raise with the instance size. |
 | `MCP_ROOT_REDIRECT_URL` | *(unset)* | If set, redirect `GET /` to this URL (e.g. your marketing site). |
 
@@ -49,20 +49,27 @@ The rate limiter and concurrency cap are **per-instance** (in-memory). If you ru
 
 ## Connecting Claude / ChatGPT / Cursor
 
-Once `https://mcp.blueprintchart.com` is live:
+Once `https://mcp.blueprintchart.com` is live the endpoint is open — no token required.
 
 **Claude.ai (web) — Pro/Team/Enterprise tiers:**
 1. Settings → Connectors → **Add custom integration**.
 2. URL: `https://mcp.blueprintchart.com/mcp`
-3. Auth header (if `MCP_AUTH_TOKEN` set): `Authorization: Bearer <token>`
+3. Save. No auth header to enter.
 
 **Claude Code (CLI):**
 ```bash
-claude mcp add blueprint-chart --transport http https://mcp.blueprintchart.com/mcp \
-  --header "Authorization: Bearer <token>"
+claude mcp add blueprint-chart --transport http https://mcp.blueprintchart.com/mcp
 ```
 
-**Cursor:** Settings → MCP → Add server → URL + bearer token.
+**Cursor:** Settings → MCP → Add server → URL.
+
+**ChatGPT (Custom Connectors):** Add the URL as a custom connector. No auth.
+
+## Authentication
+
+The reference deployment runs **without authentication**. If you fork the project for a private or internal deployment, set `MCP_AUTH_TOKEN` to a 32+ char random secret. The server then requires `Authorization: Bearer <token>` on every `/mcp` call (see `src/transports/http.ts`).
+
+Caveat: `MCP_AUTH_TOKEN` is a static shared secret. It works with clients that let you configure a custom header (Claude Code CLI, Cursor, VS Code MCP, server-to-server scripts) but **not** with Claude.ai's web connector dialog or ChatGPT's custom connectors — those clients speak OAuth 2.1 and have no field to paste a bearer token. If you need web-client access *and* authentication, you have to implement OAuth on the server — this repo does not.
 
 ## Local Docker testing
 
@@ -71,18 +78,18 @@ To validate the Docker image before pushing:
 ```bash
 docker build -t blueprint-chart-mcp .
 docker run --rm -p 4321:4321 \
-  -e MCP_AUTH_TOKEN=test-token \
   -e MCP_TRUST_PROXY=0 \
   blueprint-chart-mcp
 
 # In another terminal
 curl http://127.0.0.1:4321/healthz                                    # → {"status":"ok"}
 curl -X POST http://127.0.0.1:4321/mcp \
-  -H 'Authorization: Bearer test-token' \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
+
+To test the auth gate locally, add `-e MCP_AUTH_TOKEN=test-token` to `docker run` and `-H 'Authorization: Bearer test-token'` to the `curl` call.
 
 ## Operational reference
 
@@ -93,8 +100,8 @@ curl -X POST http://127.0.0.1:4321/mcp \
 | `PORT` | `4321` | HTTP port. Railway sets this. |
 | `MCP_HTTP` | `0` | `1` to default to HTTP mode (equivalent to `--http`). |
 | `MCP_HOST` | `127.0.0.1` | Bind host. Set to `0.0.0.0` in containers. |
-| `MCP_AUTH_TOKEN` | *(unset)* | If set, require `Authorization: Bearer <token>`. |
-| `MCP_ALLOWED_ORIGINS` | `*` | Comma-separated CORS allowlist. Use specific origins in prod. |
+| `MCP_AUTH_TOKEN` | *(unset)* | If set, require `Authorization: Bearer <token>` on every `/mcp` call. See [Authentication](#authentication). Left unset in the reference deployment. |
+| `MCP_ALLOWED_ORIGINS` | `*` | Comma-separated CORS allowlist. `*` is fine for a public deployment; tighten if you go private. |
 | `MCP_TRUST_PROXY` | `0` | `1` to read `X-Forwarded-For`. Set behind Railway/Cloudflare/Caddy. |
 | `MCP_MAX_CONCURRENT_REQUESTS` | `16` | Cap on concurrent POST /mcp requests. |
 | `MCP_RATE_LIMIT_PER_MINUTE` | *(off)* | Per-IP rate limit. Recommend `60` in prod. |
@@ -119,7 +126,7 @@ Production logs are JSON-per-line to **stderr** (Railway captures stderr by defa
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | Railway health check failing during deploy | `/healthz` not responding before `start-period` expires | Bump `healthcheckTimeout` in `railway.json`. Default 30s; raise to 60s if cold start is slow. |
-| `401 Unauthorized` from Claude after setup | `MCP_AUTH_TOKEN` set but Claude integration missing the header | Re-enter the bearer token in the Custom Integration dialog. |
+| `401 Unauthorized` from Claude after setup | `MCP_AUTH_TOKEN` set on the server, but the client isn't sending a matching `Authorization: Bearer …` header | Either unset `MCP_AUTH_TOKEN` (public deployment), or re-add the connector from a client that supports custom headers (Claude Code CLI, Cursor). Claude.ai web and ChatGPT cannot send static bearer tokens — see [Authentication](#authentication). |
 | `429 Too Many Requests` for a real user | `MCP_RATE_LIMIT_PER_MINUTE` too low for the workflow | Bump the env var; Railway re-deploys (or no restart needed — it reads env on boot, so a manual restart applies it). |
 | All requests hang after ~16 simultaneous calls | Concurrency cap reached, semaphore queueing | Raise `MCP_MAX_CONCURRENT_REQUESTS` and/or instance size. |
 | `getBBox` / text layout looks wrong | Font missing in container | The Dockerfile installs `fonts-dejavu-core` + `fontconfig`. If you need additional fonts (CJK, etc.), add them to the `apt-get install` line. |
