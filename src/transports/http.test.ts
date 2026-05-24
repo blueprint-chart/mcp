@@ -19,16 +19,20 @@ describe('http transport', () => {
     await withServer({ port: 0 }, async (url) => {
       // 1. Establish SSE session
       const sseRes = await fetch(`${url}/mcp`, {
-        headers: { 'accept': 'text/event-stream' },
+        headers: { accept: 'text/event-stream' },
       })
       expect(sseRes.status).toBe(200)
-      
+
       const reader = sseRes.body?.getReader()
-      if (!reader) throw new Error('No reader')
+      if (!reader) {
+        throw new Error('No reader')
+      }
       const { value } = await reader.read()
       const text = new TextDecoder().decode(value)
       const sessionIdMatch = text.match(/sessionId=([a-zA-Z0-9-]+)/)
-      if (!sessionIdMatch) throw new Error(`No sessionId in SSE: ${text}`)
+      if (!sessionIdMatch) {
+        throw new Error(`No sessionId in SSE: ${text}`)
+      }
       const sessionId = sessionIdMatch[1]
 
       // 2. Post message using sessionId
@@ -111,7 +115,7 @@ describe('http transport', () => {
   it('rejects SSE without token when authToken is set', async () => {
     await withServer({ port: 0, authToken: 'secret' }, async (url) => {
       const res = await fetch(`${url}/mcp`, {
-        headers: { 'accept': 'text/event-stream' },
+        headers: { accept: 'text/event-stream' },
       })
       expect(res.status).toBe(401)
     })
@@ -121,8 +125,8 @@ describe('http transport', () => {
     await withServer({ port: 0, authToken: 'secret' }, async (url) => {
       const res = await fetch(`${url}/mcp`, {
         headers: {
-          'accept': 'text/event-stream',
-          'authorization': 'Bearer secret',
+          accept: 'text/event-stream',
+          authorization: 'Bearer secret',
         },
       })
       expect(res.status).toBe(200)
@@ -133,7 +137,7 @@ describe('http transport', () => {
   it('rate-limits /mcp by IP', async () => {
     await withServer({ port: 0, rateLimitPerMinute: 2 }, async (url) => {
       const hit = async () => fetch(`${url}/mcp`, {
-        headers: { 'accept': 'text/event-stream' },
+        headers: { accept: 'text/event-stream' },
       })
       const first = await hit()
       const second = await hit()
