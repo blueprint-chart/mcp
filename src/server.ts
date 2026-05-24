@@ -29,7 +29,7 @@ const TOOLS: Record<string, ToolDef> = {
     handler: args => validateDsl(args as { source: string }),
   },
   inspect_dsl: {
-    description: 'Parse a .bpc source and return a structured summary: chartType, scenes, series count, annotations, etc.',
+    description: 'Parse a .bpc source and return a structured summary: chartType, scenes, data (rowCount, entryCount, labels, seriesNames, multiSeries), annotation/colorize/highlight/area-fill presence flags, series count.',
     inputSchema: InspectInputSchema,
     handler: args => inspectDsl(args as { source: string }),
   },
