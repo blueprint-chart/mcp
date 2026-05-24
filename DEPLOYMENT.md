@@ -24,6 +24,7 @@ In **Variables**, set:
 | `MCP_RATE_LIMIT_PER_MINUTE` | `60` | Per-IP rate limit. Critical when the endpoint is public — start at 60; raise if real users complain. |
 | `MCP_MAX_CONCURRENT_REQUESTS` | `16` | Cap on simultaneous POSTs. 16 is a safe default for a single 1 vCPU instance. Raise with the instance size. |
 | `MCP_ROOT_REDIRECT_URL` | *(unset)* | If set, redirect `GET /` to this URL (e.g. your marketing site). |
+| `MCP_PUBLIC_URL` | `https://mcp.blueprintchart.com` | Public base URL (no path, no trailing slash). When set, the server advertises `serverInfo.icons` with absolute URLs so MCP clients (claude.ai, ChatGPT) can render the favicon next to the connector. Leave unset for stdio / local use. |
 
 `PORT` is set automatically by Railway — don't override it.
 
@@ -107,6 +108,7 @@ To test the auth gate locally, add `-e MCP_AUTH_TOKEN=test-token` to `docker run
 | `MCP_RATE_LIMIT_PER_MINUTE` | *(off)* | Per-IP rate limit. Recommend `60` in prod. |
 | `MCP_SILENT` | `0` | `1` to suppress JSON access logs to stderr. |
 | `MCP_ROOT_REDIRECT_URL` | *(unset)* | If set, redirect `GET /` to this URL. |
+| `MCP_PUBLIC_URL` | *(unset)* | Public base URL (no path, no trailing slash). When set, advertised in `serverInfo.icons` so MCP clients can render the favicon. Required for icons to show in claude.ai / ChatGPT. |
 
 ### Endpoints
 

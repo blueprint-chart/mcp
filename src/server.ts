@@ -29,11 +29,11 @@ interface ToolDef {
   handler: (args: unknown) => ToolResult<unknown> | Promise<ToolResult<unknown>>
 }
 
-// Server metadata is read from package.json + public/ once at module load and
-// embedded into every `initialize` response's `serverInfo`. Icons are inlined
-// as data URIs so they render in MCP clients (e.g. claude.ai) regardless of
-// where the server is deployed — clients don't crawl the HTTP root for
-// /favicon.ico, they read serverInfo.icons per the MCP spec.
+// Server metadata is embedded into every `initialize` response's `serverInfo`.
+// Icons are advertised only when `MCP_PUBLIC_URL` is set (e.g. on a hosted
+// deployment) — they must be absolute URLs because some MCP clients reject
+// `data:` URIs. For stdio / local use the env var is typically unset and the
+// `icons` field is omitted entirely.
 const PKG_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const PKG = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf8')) as {
   version: string
@@ -41,15 +41,22 @@ const PKG = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf8')) as 
   homepage?: string
 }
 
-function loadIconAsDataUri(file: string, mimeType: string): string {
-  const base64 = readFileSync(join(PKG_ROOT, 'public', file)).toString('base64')
-  return `data:${mimeType};base64,${base64}`
+interface ServerIcon {
+  src: string
+  mimeType: string
+  sizes?: string[]
 }
 
-const SERVER_ICONS = [
-  { src: loadIconAsDataUri('favicon.svg', 'image/svg+xml'), mimeType: 'image/svg+xml' },
-  { src: loadIconAsDataUri('favicon.png', 'image/png'), mimeType: 'image/png', sizes: ['256x256'] },
-]
+function buildServerIcons(): ServerIcon[] | undefined {
+  const baseUrl = process.env.MCP_PUBLIC_URL?.trim().replace(/\/+$/, '')
+  if (!baseUrl) {
+    return undefined
+  }
+  return [
+    { src: `${baseUrl}/favicon.svg`, mimeType: 'image/svg+xml' },
+    { src: `${baseUrl}/favicon.png`, mimeType: 'image/png', sizes: ['256x256'] },
+  ]
+}
 
 export const TOOLS: Record<string, ToolDef> = {
   validate_dsl: {
@@ -111,6 +118,7 @@ function formatToolResult<T>(result: ToolResult<T>): FormattedToolResult {
 }
 
 export function createServer(): Server {
+  const icons = buildServerIcons()
   const server = new Server(
     {
       name: '@blueprint-chart/mcp',
@@ -118,7 +126,7 @@ export function createServer(): Server {
       version: PKG.version,
       description: PKG.description,
       websiteUrl: PKG.homepage,
-      icons: SERVER_ICONS,
+      ...(icons && { icons }),
     },
     { capabilities: { tools: {}, resources: {}, prompts: {} } },
   )

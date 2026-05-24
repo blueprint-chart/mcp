@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { samples } from '@blueprint-chart/lib'
@@ -111,15 +111,34 @@ describe('server', () => {
     expect(first.text).toMatch(/chart\s+\w/)
   })
 
-  it('advertises icons + title in serverInfo so MCP clients can display them', async () => {
-    const { client } = await connectInMemory()
-    const info = client.getServerVersion()
-    expect(info?.title).toBe('Blueprint Chart')
-    expect(info?.version).toMatch(/^\d+\.\d+\.\d+/)
-    const icons = info?.icons as Array<{ src: string, mimeType?: string }> | undefined
-    expect(icons?.length).toBeGreaterThanOrEqual(2)
-    expect(icons?.some(i => i.mimeType === 'image/svg+xml' && i.src.startsWith('data:image/svg+xml;base64,'))).toBe(true)
-    expect(icons?.some(i => i.mimeType === 'image/png' && i.src.startsWith('data:image/png;base64,'))).toBe(true)
+  describe('serverInfo metadata', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    it('always advertises title + dynamic version', async () => {
+      vi.stubEnv('MCP_PUBLIC_URL', '')
+      const { client } = await connectInMemory()
+      const info = client.getServerVersion()
+      expect(info?.title).toBe('Blueprint Chart')
+      expect(info?.version).toMatch(/^\d+\.\d+\.\d+/)
+    })
+
+    it('omits icons when MCP_PUBLIC_URL is unset (stdio / local use)', async () => {
+      vi.stubEnv('MCP_PUBLIC_URL', '')
+      const { client } = await connectInMemory()
+      expect(client.getServerVersion()?.icons).toBeUndefined()
+    })
+
+    it('advertises absolute-URL icons when MCP_PUBLIC_URL is set', async () => {
+      vi.stubEnv('MCP_PUBLIC_URL', 'https://mcp.example.com/')
+      const { client } = await connectInMemory()
+      const icons = client.getServerVersion()?.icons as Array<{ src: string, mimeType?: string, sizes?: string[] }> | undefined
+      expect(icons).toEqual([
+        { src: 'https://mcp.example.com/favicon.svg', mimeType: 'image/svg+xml' },
+        { src: 'https://mcp.example.com/favicon.png', mimeType: 'image/png', sizes: ['256x256'] },
+      ])
+    })
   })
 
   it('exposes author_chart prompt', async () => {

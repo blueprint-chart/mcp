@@ -90,6 +90,10 @@ Environment variables (HTTP mode):
   MCP_RATE_LIMIT_PER_MINUTE     Per-IP rate limit (default off; e.g. 60).
   MCP_SILENT=1                  Suppress JSON access logs to stderr.
   MCP_ROOT_REDIRECT_URL         If set, redirect GET / to this URL.
+  MCP_PUBLIC_URL                Public base URL (no path, no trailing slash).
+                                When set, advertised in serverInfo.icons so
+                                MCP clients (claude.ai, etc.) can render the
+                                favicon. Example: https://mcp.example.com
 `)
       process.exit(0)
     }
