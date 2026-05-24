@@ -1,0 +1,141 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: skip actual NPM publish"
+        type: boolean
+        default: true
+      tag:
+        description: "Tag to verify against (only used for workflow_dispatch)"
+        type: string
+        required: false
+
+permissions:
+  contents: read
+  id-token: write   # required for npm OIDC trusted publishing
+
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11'
+
+jobs:
+  verify:
+    name: Verify version matches tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - id: resolve
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="$RELEASE_TAG"
+          else
+            TAG="$INPUT_TAG"
+            if [ -z "$TAG" ]; then
+              VER=$(node -p "require('./package.json').version")
+              TAG="v$VER"
+            fi
+          fi
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved TAG=$TAG VERSION=$VERSION"
+      - name: Verify package version matches tag
+        env:
+          RESOLVED_TAG: ${{ steps.resolve.outputs.tag }}
+        run: node scripts/verify-release-versions.mjs "$RESOLVED_TAG"
+
+  lint:
+    name: Lint
+    needs: [verify]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: make install
+      - run: make lint
+
+  test:
+    name: Test
+    needs: [verify]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: make install
+      - run: make test
+
+  build:
+    name: Build
+    needs: [verify]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: make install
+      - run: make build
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-npm:
+    name: Publish to NPM
+    needs: [verify, lint, test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+      - run: make install
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: pnpm publish (dry run)
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        run: pnpm publish --access public --no-git-checks --provenance --dry-run
+      - name: pnpm publish
+        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+        run: pnpm publish --access public --no-git-checks --provenance
