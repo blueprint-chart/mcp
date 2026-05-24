@@ -175,14 +175,17 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       return
     }
 
+    const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
+    const pathname = url.pathname
+
     // Health check (Railway / load-balancer liveness probe)
-    if (req.url === '/healthz' || req.url === '/health') {
+    if (pathname === '/healthz' || pathname === '/health') {
       jsonResponse(res, 200, { status: 'ok' })
       return
     }
 
     // Root redirect
-    if (req.url === '/' && opts.rootRedirectUrl) {
+    if (pathname === '/' && opts.rootRedirectUrl) {
       logEvent(silent, { event: 'root_redirect', ip, to: opts.rootRedirectUrl })
       res.statusCode = 302
       res.setHeader('Location', opts.rootRedirectUrl)
@@ -190,15 +193,16 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       return
     }
 
-    const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
-    const pathname = url.pathname.replace(/\/$/, '') // Normalize trailing slash
+    // Normalized path for MCP check (tolerate trailing slash)
+    const normalizedPath = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname
 
-    if (pathname !== '/mcp') {
-      logEvent(silent, { event: 'incoming_request', method: req.method, path: url.pathname, ip, headers: req.headers })
-      logEvent(silent, { event: 'path_not_found', path: url.pathname, normalized: pathname, ip })
+    if (normalizedPath !== '/mcp') {
+      logEvent(silent, { event: 'path_not_found', path: url.pathname, ip, method: req.method })
       jsonResponse(res, 404, { error: 'Not Found' })
       return
     }
+
+    logEvent(silent, { event: 'incoming_request', method: req.method, path: url.pathname, ip, headers: req.headers })
 
     // Bearer token auth (off if MCP_AUTH_TOKEN not set)
     if (opts.authToken) {

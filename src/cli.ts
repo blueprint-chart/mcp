@@ -25,7 +25,7 @@ function parseList(value: string | undefined): string[] | undefined {
 function parseConfig(argv: string[]): CliConfig {
   const env = process.env
   const port = Number(env.PORT) || 4321
-  const host = env.MCP_HOST || '127.0.0.1'
+  const host = env.MCP_HOST || (env.PORT ? '0.0.0.0' : '127.0.0.1')
   const allowedOriginsList = parseList(env.MCP_ALLOWED_ORIGINS)
   const allowedOrigins: string[] | '*' | undefined = allowedOriginsList
     && allowedOriginsList.length === 1 && allowedOriginsList[0] === '*'
