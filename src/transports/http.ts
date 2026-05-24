@@ -163,29 +163,24 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
 
   const httpServer: HttpServer = createHttpServer(async (req, res) => {
     const started = Date.now()
-    const origin = req.headers.origin
+    const rawUrl = req.url ?? '/'
+    const hostHeader = req.headers.host ?? 'unknown'
     const ip = getClientIp(req, trustProxy)
-    applyCors(res, origin, allowedOrigins)
+    const proto = trustProxy ? (req.headers['x-forwarded-proto'] as string ?? 'http') : 'http'
 
-    // CORS preflight
-    if (req.method === 'OPTIONS') {
-      logEvent(silent, { event: 'preflight', ip, headers: req.headers })
-      res.statusCode = 204
-      res.end()
-      return
-    }
+    // Raw log for every single request
+    logEvent(silent, { event: 'raw_request', method: req.method, url: rawUrl, host: hostHeader, ip, proto })
 
-    const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
-    const pathname = url.pathname
+    applyCors(res, req.headers.origin, allowedOrigins)
 
-    // Health check (Railway / load-balancer liveness probe)
-    if (pathname === '/healthz' || pathname === '/health') {
+    // 1. Health check (Railway / load-balancer liveness probe)
+    if (rawUrl === '/healthz' || rawUrl === '/health') {
       jsonResponse(res, 200, { status: 'ok' })
       return
     }
 
-    // Root redirect
-    if (pathname === '/' && opts.rootRedirectUrl) {
+    // 2. Root redirect (highest priority after health check)
+    if ((rawUrl === '/' || rawUrl === '') && opts.rootRedirectUrl) {
       logEvent(silent, { event: 'root_redirect', ip, to: opts.rootRedirectUrl })
       res.statusCode = 302
       res.setHeader('Location', opts.rootRedirectUrl)
@@ -193,16 +188,25 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       return
     }
 
-    // Normalized path for MCP check (tolerate trailing slash)
+    // 3. CORS preflight
+    if (req.method === 'OPTIONS') {
+      logEvent(silent, { event: 'preflight', ip, headers: req.headers })
+      res.statusCode = 204
+      res.end()
+      return
+    }
+
+    const url = new URL(rawUrl, `${proto}://${hostHeader}`)
+    const pathname = url.pathname
     const normalizedPath = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname
 
     if (normalizedPath !== '/mcp') {
-      logEvent(silent, { event: 'path_not_found', path: url.pathname, ip, method: req.method })
+      logEvent(silent, { event: 'path_not_found', path: pathname, ip, method: req.method })
       jsonResponse(res, 404, { error: 'Not Found' })
       return
     }
 
-    logEvent(silent, { event: 'incoming_request', method: req.method, path: url.pathname, ip, headers: req.headers })
+    logEvent(silent, { event: 'incoming_request', method: req.method, path: pathname, ip, headers: req.headers })
 
     // Bearer token auth (off if MCP_AUTH_TOKEN not set)
     if (opts.authToken) {
