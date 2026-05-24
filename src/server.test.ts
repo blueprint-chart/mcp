@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { samples } from '@blueprint-chart/lib'
-import { createServer } from './server'
+import { createServer, TOOLS } from './server'
 
 async function connectInMemory() {
   const server = createServer()
@@ -13,12 +13,36 @@ async function connectInMemory() {
   return { client, server }
 }
 
+describe('TOOLS registry', () => {
+  it('contains the eight expected tool names', () => {
+    expect(Object.keys(TOOLS).sort()).toEqual([
+      'describe_chart_type',
+      'get_example',
+      'get_grammar',
+      'inspect_dsl',
+      'list_chart_types',
+      'recommend_chart_type',
+      'render',
+      'validate_dsl',
+    ])
+  })
+})
+
 describe('server', () => {
-  it('lists 4 tools', async () => {
+  it('lists 8 tools', async () => {
     const { client } = await connectInMemory()
     const r = await client.listTools()
     const names = r.tools.map(t => t.name).sort()
-    expect(names).toEqual(['inspect_dsl', 'recommend_chart_type', 'render', 'validate_dsl'])
+    expect(names).toEqual([
+      'describe_chart_type',
+      'get_example',
+      'get_grammar',
+      'inspect_dsl',
+      'list_chart_types',
+      'recommend_chart_type',
+      'render',
+      'validate_dsl',
+    ])
   })
 
   it('calls validate_dsl successfully for a sample', async () => {

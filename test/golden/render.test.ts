@@ -18,9 +18,9 @@ describe('golden render', () => {
       continue
     }
     it(`renders stable SVG for sample "${id}"`, () => {
-      const svg = renderSceneState(sample.dsl, { sceneIndex: 0, width: 800, height: 500 })
+      const result = renderSceneState(sample.dsl, { sceneIndex: 0, width: 800, height: 500 })
       // Normalize transient bits: D3-generated IDs and `url(#…)` refs.
-      const normalized = svg
+      const normalized = result.svg
         .replace(/id="[a-zA-Z0-9_-]+"/g, 'id="X"')
         .replace(/url\(#[a-zA-Z0-9_-]+\)/g, 'url(#X)')
       expect(normalized).toMatchSnapshot()

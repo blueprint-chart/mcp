@@ -3,7 +3,8 @@ import { JSDOM, VirtualConsole, type DOMWindow } from 'jsdom'
 export interface JsdomEnv {
   window: DOMWindow
   container: HTMLElement
-  serialize: () => string
+  serializeSvg: () => string
+  serializeFrame: () => string | undefined
   cleanup: () => void
 }
 
@@ -36,9 +37,22 @@ export function createJsdomEnv(opts: JsdomEnvOptions): JsdomEnv {
   return {
     window: dom.window,
     container,
-    serialize: () => {
+    serializeSvg: () => {
+      // When thumbnail=false the lib wraps the SVG in a div.bc-frame. The chart
+      // SVG lives inside div.bc-frame-body. Extract it precisely so we don't
+      // accidentally grab the small logo SVG in the footer.
+      const frameBody = container.querySelector('.bc-frame-body')
+      if (frameBody) {
+        const svg = frameBody.querySelector('svg')
+        return svg ? svg.outerHTML : ''
+      }
+      // Fallback for bare renders (no frame): grab the direct SVG.
       const svg = container.querySelector('svg')
       return svg ? svg.outerHTML : ''
+    },
+    serializeFrame: () => {
+      const frame = container.querySelector('.bc-frame')
+      return frame ? frame.outerHTML : undefined
     },
     cleanup: () => dom.window.close(),
   }

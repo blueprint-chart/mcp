@@ -11,6 +11,10 @@ import { validateDsl, ValidateInputSchema } from './tools/validate'
 import { inspectDsl, InspectInputSchema } from './tools/inspect'
 import { recommendChartType, RecommendInputSchema } from './tools/recommend'
 import { renderTool, RenderInputSchema } from './tools/render'
+import { listChartTypes, ListChartTypesInputSchema } from './tools/listChartTypes'
+import { describeChartType, DescribeChartTypeInputSchema } from './tools/describeChartType'
+import { getExample, GetExampleInputSchema } from './tools/getExample'
+import { getGrammar, GetGrammarInputSchema } from './tools/getGrammar'
 import { listResources, readResource } from './resources/index'
 import { authorChartPrompt } from './prompts/authorChart'
 import { zodToJsonSchema } from './lib/zodToJsonSchema'
@@ -22,14 +26,14 @@ interface ToolDef {
   handler: (args: unknown) => ToolResult<unknown> | Promise<ToolResult<unknown>>
 }
 
-const TOOLS: Record<string, ToolDef> = {
+export const TOOLS: Record<string, ToolDef> = {
   validate_dsl: {
-    description: 'Parse a .bpc source string. Return ok or precise parse errors with line/column.',
+    description: 'Parse and semantically validate a .bpc source. Returns { valid, errors[], warnings[] }. Errors include unknown chart types, unknown properties, and empty data blocks with nearest-neighbour suggestions.',
     inputSchema: ValidateInputSchema,
     handler: args => validateDsl(args as { source: string }),
   },
   inspect_dsl: {
-    description: 'Parse a .bpc source and return a structured summary: chartType, scenes, series count, annotations, etc.',
+    description: 'Parse a .bpc source and return a structured summary: chartType, scenes, data (rowCount, entryCount, labels, seriesNames, multiSeries), annotation/colorize/highlight/area-fill presence flags, series count.',
     inputSchema: InspectInputSchema,
     handler: args => inspectDsl(args as { source: string }),
   },
@@ -39,9 +43,29 @@ const TOOLS: Record<string, ToolDef> = {
     handler: args => recommendChartType(args),
   },
   render: {
-    description: 'Render a .bpc source to SVG (default) or PNG. Accepts scene index, width, height.',
+    description: 'Render a .bpc source to SVG (default), PNG, or HTML. Always returns structured frame metadata (title, description, byline, source, sourceUrl, note). Pass `save: <path>` to write the primary output to disk and omit it from the response — useful when the LLM client cannot display binary payloads inline. Saving requires MCP_ALLOW_FS_WRITE=1.',
     inputSchema: RenderInputSchema,
     handler: args => renderTool(args),
+  },
+  list_chart_types: {
+    description: 'List every chart type the renderer supports, with aliases and one-line summaries. Call this before writing .bpc if unsure which type to use.',
+    inputSchema: ListChartTypesInputSchema,
+    handler: () => listChartTypes(),
+  },
+  describe_chart_type: {
+    description: 'Return everything an LLM needs to write a .bpc for a given chart type. Input: { chartType: "bar-horizontal" } (or any canonical/alias name from list_chart_types). Returns summary, when-to-use, when-NOT-to-use, full property list with enum choices, data-shape example, and a pointer to a canonical sample.',
+    inputSchema: DescribeChartTypeInputSchema,
+    handler: args => describeChartType(args),
+  },
+  get_example: {
+    description: 'Return a canonical .bpc example. Pass { name } for a specific sample id, { chartType } for the first sample of that type, or no args for a starter sample.',
+    inputSchema: GetExampleInputSchema,
+    handler: args => getExample(args),
+  },
+  get_grammar: {
+    description: 'Return the .bpc DSL grammar as markdown. Pass { section: "chart" | "data" | "properties" | "scenes" | "annotations" } for a focused subset, or no args for the full grammar.',
+    inputSchema: GetGrammarInputSchema,
+    handler: args => getGrammar(args),
   },
 }
 

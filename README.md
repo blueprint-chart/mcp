@@ -17,7 +17,7 @@
 
 </div>
 
-The MCP exposes Blueprint Chart's dataviz handbook, DSL grammar reference, chart-type docs, and canonical samples as MCP resources, plus four deterministic tools: `validate_dsl`, `inspect_dsl`, `recommend_chart_type`, and `render`. Your LLM writes the `.bpc`; the MCP grounds it in real dataviz pedagogy and gives it a tight feedback loop.
+The MCP exposes Blueprint Chart's dataviz handbook, DSL grammar reference, chart-type docs, and canonical samples as MCP resources, plus eight deterministic tools: `validate_dsl`, `inspect_dsl`, `recommend_chart_type`, `render`, `list_chart_types`, `describe_chart_type`, `get_example`, and `get_grammar`. Your LLM writes the `.bpc`; the MCP grounds it in real dataviz pedagogy and gives it a tight feedback loop.
 
 ## Install
 
@@ -51,10 +51,16 @@ claude mcp add blueprint-chart -- npx -y @blueprint-chart/mcp
 
 | Tool | Purpose |
 | --- | --- |
-| `validate_dsl` | Parse `.bpc`; precise errors with line/column |
-| `inspect_dsl` | Parse and summarize: chart type, scenes, series, annotations |
-| `recommend_chart_type` | Rank chart types for a given column shape |
-| `render` | Render to SVG (default) or PNG |
+| `validate_dsl` | Parse `.bpc`; returns `{ valid, errors[], warnings[] }` — each error has `code`, `message`, `suggestion` |
+| `inspect_dsl` | Parse and summarize: `chartType`, `scenes`, `seriesCount`, `rowCount`, `hasHighlights`, `hasColorizes`, etc. |
+| `recommend_chart_type` | Rank chart types for a given column shape and row count |
+| `render` | Render to SVG (default) or PNG; structured `errors[]` (each with `code` + `suggestion`) on failure |
+| `list_chart_types` | List all renderable chart types (tool equivalent of `bpc://handbook/choosing`) |
+| `describe_chart_type` | Properties, when-to-use, and data-shape for one chart type (tool equivalent of `bpc://chart-types/{slug}`) |
+| `get_example` | Fetch a canonical `.bpc` sample by chart type or sample name (tool equivalent of `bpc://samples/{id}`) |
+| `get_grammar` | Full DSL syntax reference (tool equivalent of `bpc://grammar`) |
+
+The four discovery tools (`list_chart_types`, `describe_chart_type`, `get_example`, `get_grammar`) let clients without MCP resource support access the same reference material that the `bpc://` URIs expose.
 
 ## Resources
 
@@ -77,7 +83,7 @@ Once the MCP is connected, ask Claude to make a chart:
 
 > **You:** Make a horizontal bar chart of English letter frequencies — top 10, highlight E.
 >
-> **Claude:** *(reads `bpc://grammar`, `bpc://handbook/choosing`, `bpc://samples/letter-frequency`, writes the `.bpc`, calls `validate_dsl` to confirm it parses, calls `render` with `format: 'png'` and shows you the image and the source)*
+> **Claude:** *(calls `list_chart_types`, `get_example({ chartType: "bar-horizontal" })`, writes the `.bpc`, calls `validate_dsl` to confirm it parses, calls `render` with `format: 'png'` and shows you the image and the source)*
 >
 > Here's the chart:
 >
@@ -119,7 +125,7 @@ chart bar-vertical {
 
 Full grammar at `bpc://grammar`; 17 canonical samples at `bpc://samples/<id>` (`letter-frequency`, `co2-emissions`, `quarterly-revenue`, `browser-market`, `temperature-anomaly`, `population-stacked-bar`, ...).
 
-### `validate_dsl` — parse with precise errors
+### `validate_dsl` — parse with structured diagnostics
 
 Request:
 
@@ -130,15 +136,19 @@ Request:
 }
 ```
 
-Response (note the line + column):
+Response — `valid` is false; each entry in `errors[]` carries a `code`, human-readable `message`, and an actionable `suggestion`:
 
 ```json
 {
-  "ok": false,
-  "code": "E_PARSE",
+  "valid": false,
   "errors": [
-    { "line": 2, "column": 19, "message": "Expected \"\\\"\" but end of input found." }
-  ]
+    {
+      "code": "E_PARSE",
+      "message": "Expected \"\\\"\" but end of input found.",
+      "suggestion": "Close the string literal on line 2."
+    }
+  ],
+  "warnings": []
 }
 ```
 
@@ -219,7 +229,7 @@ Response:
 }
 ```
 
-If rasterization fails (rare), the response is `{ ok: false, code: "E_RENDER", … }` **and still includes** the SVG that was successfully produced — partial success is preserved.
+If rasterization fails (rare), `errors[]` is non-empty — each entry has a `code` (`"E_RENDER"`) and a `suggestion` — **and the response still includes** the SVG that was successfully produced, so partial success is preserved.
 
 ### Reading a resource
 
