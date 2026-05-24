@@ -1,0 +1,46 @@
+# Version control + CI
+.git
+.gitignore
+.gitattributes
+.github
+
+# Editor / tool state
+.vscode
+.idea
+.eslintcache
+.DS_Store
+Thumbs.db
+
+# Local-only project state (never ship)
+.claude
+.claude-flow
+.swarm
+.superpowers
+.ralph-tui
+.review
+.worktrees
+
+# Dependencies + build artifacts (Docker rebuilds these)
+node_modules
+dist
+coverage
+
+# Tests and fixtures (not needed at runtime; tsconfig rootDir excludes them)
+test
+test-results
+playwright-report
+
+# Project docs the runtime container doesn't need
+docs
+AGENTS.md
+RELEASING.md
+DEPLOYMENT.md
+
+# Build/release tooling not used inside the image
+Makefile
+scripts
+eslint.config.js
+
+# Env files (must never be baked into images)
+.env
+.env.*
