@@ -5,10 +5,13 @@
   "license": "MIT",
   "author": "pirhoo",
   "type": "module",
-  "homepage": "https://github.com/blueprint-chart/blueprint-chart-mcp#readme",
+  "homepage": "https://github.com/blueprint-chart/mcp#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/blueprint-chart/blueprint-chart-mcp.git"
+    "url": "git+https://github.com/blueprint-chart/mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/blueprint-chart/mcp/issues"
   },
   "bin": {
     "blueprint-chart-mcp": "./bin/blueprint-chart-mcp.js"
