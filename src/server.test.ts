@@ -45,6 +45,27 @@ describe('server', () => {
     ])
   })
 
+  it('publishes JSON Schemas with concrete properties (not a permissive stub)', async () => {
+    const { client } = await connectInMemory()
+    const r = await client.listTools()
+    for (const tool of r.tools) {
+      const schema = tool.inputSchema as Record<string, unknown>
+      expect(schema.type, `${tool.name}: schema.type`).toBe('object')
+      // Discovery tools like list_chart_types take no params — their `properties`
+      // object exists but is empty. Every other tool has at least one property.
+      expect(schema.properties, `${tool.name}: schema.properties`).toBeDefined()
+    }
+    const validate = r.tools.find(t => t.name === 'validate_dsl')!
+    const validateSchema = validate.inputSchema as { properties: Record<string, unknown>, required?: string[] }
+    expect(validateSchema.properties.source).toBeDefined()
+    expect(validateSchema.required).toEqual(['source'])
+
+    const render = r.tools.find(t => t.name === 'render')!
+    const renderSchema = render.inputSchema as { properties: Record<string, unknown> }
+    expect(renderSchema.properties.format).toBeDefined()
+    expect(renderSchema.properties.save).toBeDefined()
+  })
+
   it('calls validate_dsl successfully for a sample', async () => {
     const { client } = await connectInMemory()
     const r = await client.callTool({

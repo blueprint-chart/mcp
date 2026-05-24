@@ -1,12 +1,19 @@
-// Minimal zod → JSON Schema for v3 zod. Replace with `zod-to-json-schema` package if surface grows.
 import type { ZodTypeAny } from 'zod'
+import { zodToJsonSchema as toJsonSchema } from 'zod-to-json-schema'
 
 /**
- * Permissive stub: returns a generic object schema that allows any properties.
- * MCP tool handlers do the precise runtime validation via Zod. If MCP clients
- * begin requiring precise JSON Schema for `listTools`, replace this body with
- * the `zod-to-json-schema` package.
+ * Convert a Zod schema to a JSON Schema object suitable for MCP `tools/list`.
+ *
+ * MCP clients (notably claude.ai web) introspect this schema to know what
+ * parameters a tool accepts. A permissive stub left tools effectively
+ * un-invokable because the param shapes weren't discoverable.
+ *
+ * `zod-to-json-schema` produces a `$schema`-prefixed draft-07 document; we
+ * unwrap that to just the inline schema body so it slots cleanly into the
+ * MCP tool descriptor.
  */
-export function zodToJsonSchema(_schema: ZodTypeAny): Record<string, unknown> {
-  return { type: 'object', additionalProperties: true }
+export function zodToJsonSchema(schema: ZodTypeAny): Record<string, unknown> {
+  const full = toJsonSchema(schema, { target: 'jsonSchema7', $refStrategy: 'none' })
+  const { $schema: _$schema, ...rest } = full as Record<string, unknown>
+  return rest
 }
