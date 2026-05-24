@@ -34,6 +34,12 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      # Golden render snapshots embed text-width measurements from
+      # @napi-rs/canvas. Install the same font stack the Dockerfile uses so
+      # CI text metrics match local + production rendering. Without dejavu,
+      # canvas falls back to a different font and annotation paths drift.
+      - name: Install rendering fonts
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core
       - run: make install
       - run: make test
 
