@@ -1,2 +1,8 @@
 packages:
   - '.'
+
+# pnpm 11.x supply-chain policy: minimumReleaseAge rejects deps published within 24h.
+# We disable it because our own packages (@blueprint-chart/lib, @blueprint-chart/docs)
+# are released and consumed immediately from the same monorepo author. Re-evaluate if
+# the supply-chain mix changes.
+minimumReleaseAge: 0
