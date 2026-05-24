@@ -7,6 +7,9 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { validateDsl, ValidateInputSchema } from './tools/validate'
 import { inspectDsl, InspectInputSchema } from './tools/inspect'
 import { recommendChartType, RecommendInputSchema } from './tools/recommend'
@@ -25,6 +28,28 @@ interface ToolDef {
   inputSchema: Parameters<typeof zodToJsonSchema>[0]
   handler: (args: unknown) => ToolResult<unknown> | Promise<ToolResult<unknown>>
 }
+
+// Server metadata is read from package.json + public/ once at module load and
+// embedded into every `initialize` response's `serverInfo`. Icons are inlined
+// as data URIs so they render in MCP clients (e.g. claude.ai) regardless of
+// where the server is deployed — clients don't crawl the HTTP root for
+// /favicon.ico, they read serverInfo.icons per the MCP spec.
+const PKG_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
+const PKG = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf8')) as {
+  version: string
+  description?: string
+  homepage?: string
+}
+
+function loadIconAsDataUri(file: string, mimeType: string): string {
+  const base64 = readFileSync(join(PKG_ROOT, 'public', file)).toString('base64')
+  return `data:${mimeType};base64,${base64}`
+}
+
+const SERVER_ICONS = [
+  { src: loadIconAsDataUri('favicon.svg', 'image/svg+xml'), mimeType: 'image/svg+xml' },
+  { src: loadIconAsDataUri('favicon.png', 'image/png'), mimeType: 'image/png', sizes: ['256x256'] },
+]
 
 export const TOOLS: Record<string, ToolDef> = {
   validate_dsl: {
@@ -87,7 +112,14 @@ function formatToolResult<T>(result: ToolResult<T>): FormattedToolResult {
 
 export function createServer(): Server {
   const server = new Server(
-    { name: '@blueprint-chart/mcp', version: '0.1.0' },
+    {
+      name: '@blueprint-chart/mcp',
+      title: 'Blueprint Chart',
+      version: PKG.version,
+      description: PKG.description,
+      websiteUrl: PKG.homepage,
+      icons: SERVER_ICONS,
+    },
     { capabilities: { tools: {}, resources: {}, prompts: {} } },
   )
 

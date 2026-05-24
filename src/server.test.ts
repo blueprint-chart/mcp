@@ -111,6 +111,17 @@ describe('server', () => {
     expect(first.text).toMatch(/chart\s+\w/)
   })
 
+  it('advertises icons + title in serverInfo so MCP clients can display them', async () => {
+    const { client } = await connectInMemory()
+    const info = client.getServerVersion()
+    expect(info?.title).toBe('Blueprint Chart')
+    expect(info?.version).toMatch(/^\d+\.\d+\.\d+/)
+    const icons = info?.icons as Array<{ src: string, mimeType?: string }> | undefined
+    expect(icons?.length).toBeGreaterThanOrEqual(2)
+    expect(icons?.some(i => i.mimeType === 'image/svg+xml' && i.src.startsWith('data:image/svg+xml;base64,'))).toBe(true)
+    expect(icons?.some(i => i.mimeType === 'image/png' && i.src.startsWith('data:image/png;base64,'))).toBe(true)
+  })
+
   it('exposes author_chart prompt', async () => {
     const { client } = await connectInMemory()
     const prompts = await client.listPrompts()
