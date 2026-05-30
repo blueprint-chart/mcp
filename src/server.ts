@@ -18,6 +18,7 @@ import { listChartTypes, ListChartTypesInputSchema } from './tools/listChartType
 import { describeChartType, DescribeChartTypeInputSchema } from './tools/describeChartType'
 import { getExample, GetExampleInputSchema } from './tools/getExample'
 import { getGrammar, GetGrammarInputSchema } from './tools/getGrammar'
+import { exportChart, ExportChartInputSchema } from './tools/exportChart'
 import { listResources, readResource } from './resources/index'
 import { authorChartPrompt } from './prompts/authorChart'
 import { zodToJsonSchema } from './lib/zodToJsonSchema'
@@ -98,6 +99,11 @@ export const TOOLS: Record<string, ToolDef> = {
     description: 'Return the .bpc DSL grammar as markdown. Pass { section: "chart" | "data" | "properties" | "scenes" | "annotations" } for a focused subset, or no args for the full grammar.',
     inputSchema: GetGrammarInputSchema,
     handler: args => getGrammar(args),
+  },
+  export_chart: {
+    description: 'Turn a validated .bpc source into shareable editor URLs. Validates the source through the same parse/semantic/render pipeline as `render`; on success returns { copyUrl, embedUrl, frame }. copyUrl opens an editable copy in the editor ("anyone can open this to view and copy"); embedUrl is a read-only render target suitable as an iframe src. Returns E_CONFIG if the server has no editor base URL configured (BLUEPRINT_CHART_EDITOR_URL).',
+    inputSchema: ExportChartInputSchema,
+    handler: args => exportChart(args),
   },
 }
 

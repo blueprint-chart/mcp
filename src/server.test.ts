@@ -14,9 +14,10 @@ async function connectInMemory() {
 }
 
 describe('TOOLS registry', () => {
-  it('contains the eight expected tool names', () => {
+  it('contains the nine expected tool names', () => {
     expect(Object.keys(TOOLS).sort()).toEqual([
       'describe_chart_type',
+      'export_chart',
       'get_example',
       'get_grammar',
       'inspect_dsl',
@@ -29,12 +30,13 @@ describe('TOOLS registry', () => {
 })
 
 describe('server', () => {
-  it('lists 8 tools', async () => {
+  it('lists 9 tools', async () => {
     const { client } = await connectInMemory()
     const r = await client.listTools()
     const names = r.tools.map(t => t.name).sort()
     expect(names).toEqual([
       'describe_chart_type',
+      'export_chart',
       'get_example',
       'get_grammar',
       'inspect_dsl',
@@ -148,5 +150,37 @@ describe('server', () => {
 
     const got = await client.getPrompt({ name: 'author_chart' })
     expect(got.messages.length).toBeGreaterThan(0)
+  })
+
+  describe('export_chart', () => {
+    const VALID_SOURCE = 'chart bar-vertical {\n  data {\n    "A" = 1\n  }\n}\n'
+
+    afterEach(() => {
+      delete process.env.BLUEPRINT_CHART_EDITOR_URL
+    })
+
+    it('appears in tools/list with an object-type inputSchema', async () => {
+      const { client } = await connectInMemory()
+      const r = await client.listTools()
+      const tool = r.tools.find(t => t.name === 'export_chart')
+      expect(tool).toBeDefined()
+      expect((tool!.inputSchema as Record<string, unknown>).type).toBe('object')
+    })
+
+    it('returns E_CONFIG when BLUEPRINT_CHART_EDITOR_URL is unset', async () => {
+      delete process.env.BLUEPRINT_CHART_EDITOR_URL
+      const { client } = await connectInMemory()
+      const res = await client.callTool({ name: 'export_chart', arguments: { source: VALID_SOURCE } })
+      expect(res.isError).toBe(true)
+      expect(JSON.stringify(res.content)).toMatch(/E_CONFIG/)
+    })
+
+    it('returns copyUrl with #/copy?bpc64= when BLUEPRINT_CHART_EDITOR_URL is set', async () => {
+      process.env.BLUEPRINT_CHART_EDITOR_URL = 'https://blueprintchart.com'
+      const { client } = await connectInMemory()
+      const res = await client.callTool({ name: 'export_chart', arguments: { source: VALID_SOURCE } })
+      expect(res.isError).toBeFalsy()
+      expect(JSON.stringify(res.content)).toMatch(/#\/copy\?bpc64=/)
+    })
   })
 })
