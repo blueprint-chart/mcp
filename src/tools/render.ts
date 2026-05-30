@@ -1,9 +1,9 @@
 import { z } from 'zod'
 import { writeFile } from 'node:fs/promises'
 import { resolve as resolvePath } from 'node:path'
-import type { ChartNode } from '@blueprint-chart/lib'
 import { parseDsl } from '../parse'
 import { validateAst } from '../dsl/validate'
+import { extractFrameMetadata, type FrameMetadata } from '../render/frame'
 import { diagnoseRender } from '../render/diagnose'
 import { renderSceneState } from '../render/renderSceneState'
 import { rasterizeToPng } from '../render/rasterize'
@@ -24,14 +24,7 @@ export interface RenderOutput {
   svg?: string
   png?: string
   html?: string
-  frame: {
-    title?: string
-    description?: string
-    byline?: string
-    source?: string
-    sourceUrl?: string
-    note?: string
-  }
+  frame: FrameMetadata
   mimeType: 'image/svg+xml' | 'image/png' | 'text/html'
   /** When `save` was used, the resolved absolute path the output was written to. Inline content fields (svg/png/html) are omitted. */
   savedTo?: string
@@ -57,18 +50,6 @@ function ensureSvgNamespace(svg: string): string {
     return svg
   }
   return svg.replace(/^<svg(?=\s|>)/, '<svg xmlns="http://www.w3.org/2000/svg"')
-}
-
-const FRAME_KEYS = ['title', 'description', 'byline', 'source', 'sourceUrl', 'note'] as const
-
-function extractFrameMetadata(ast: ChartNode): RenderOutput['frame'] {
-  const frame: RenderOutput['frame'] = {}
-  for (const prop of ast.properties ?? []) {
-    if ((FRAME_KEYS as readonly string[]).includes(prop.key)) {
-      frame[prop.key as keyof typeof frame] = String(prop.value).replace(/^"|"$/g, '')
-    }
-  }
-  return frame
 }
 
 export async function renderTool(input: unknown): Promise<ToolResult<RenderOutput>> {
