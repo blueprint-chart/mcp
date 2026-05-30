@@ -44,7 +44,10 @@ Add to `claude_desktop_config.json`:
 ## Use with Claude Code
 
 ```bash
-claude mcp add blueprint-chart -- npx -y @blueprint-chart/mcp
+claude mcp add blueprint-chart \
+  -e BLUEPRINT_CHART_EDITOR_URL=https://blueprintchart.com \
+  -e BLUEPRINT_CHART_DOCS_URL=https://docs.blueprintchart.com \
+  -- npx -y @blueprint-chart/mcp
 ```
 
 ## Tools

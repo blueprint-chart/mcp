@@ -94,6 +94,13 @@ Environment variables (HTTP mode):
                                 When set, advertised in serverInfo.icons so
                                 MCP clients (claude.ai, etc.) can render the
                                 favicon. Example: https://mcp.example.com
+  BLUEPRINT_CHART_EDITOR_URL    Editor app base URL (no trailing slash), e.g.
+                                https://blueprintchart.com. Required for the
+                                export_chart tool to mint copy/embed links;
+                                unset disables export (returns E_CONFIG).
+  BLUEPRINT_CHART_DOCS_URL      Docs site base URL, e.g.
+                                https://docs.blueprintchart.com. When set,
+                                tools/resources include public docsUrl fields.
 `)
       process.exit(0)
     }

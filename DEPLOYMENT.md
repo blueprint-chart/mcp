@@ -25,6 +25,8 @@ In **Variables**, set:
 | `MCP_MAX_CONCURRENT_REQUESTS` | `16` | Cap on simultaneous POSTs. 16 is a safe default for a single 1 vCPU instance. Raise with the instance size. |
 | `MCP_ROOT_REDIRECT_URL` | *(unset)* | If set, redirect `GET /` to this URL (e.g. your marketing site). |
 | `MCP_PUBLIC_URL` | `https://mcp.blueprintchart.com` | Public base URL (no path, no trailing slash). When set, the server advertises `serverInfo.icons` with absolute URLs so MCP clients (claude.ai, ChatGPT) can render the favicon next to the connector. Leave unset for stdio / local use. |
+| `BLUEPRINT_CHART_EDITOR_URL` | `https://blueprintchart.com` | Editor app base URL (no trailing slash). Required for `export_chart` to mint shareable copy/embed links. Unset disables export. |
+| `BLUEPRINT_CHART_DOCS_URL` | `https://docs.blueprintchart.com` | Docs site base URL. When set, tools/resources include `docsUrl` fields linking out to reference pages. |
 
 `PORT` is set automatically by Railway — don't override it.
 
@@ -109,6 +111,8 @@ To test the auth gate locally, add `-e MCP_AUTH_TOKEN=test-token` to `docker run
 | `MCP_SILENT` | `0` | `1` to suppress JSON access logs to stderr. |
 | `MCP_ROOT_REDIRECT_URL` | *(unset)* | If set, redirect `GET /` to this URL. |
 | `MCP_PUBLIC_URL` | *(unset)* | Public base URL (no path, no trailing slash). When set, advertised in `serverInfo.icons` so MCP clients can render the favicon. Required for icons to show in claude.ai / ChatGPT. |
+| `BLUEPRINT_CHART_EDITOR_URL` | *(unset)* | Editor app base URL (no trailing slash). When set, the `export_chart` tool mints shareable copy/embed links pointing at this base. Unset disables export (`export_chart` returns `E_CONFIG`). Recommended: `https://blueprintchart.com`. |
+| `BLUEPRINT_CHART_DOCS_URL` | *(unset)* | Docs site base URL. When set, tools and resource listings include a public `docsUrl` field so clients can link out to reference pages. Unset omits the field. Recommended: `https://docs.blueprintchart.com`. |
 
 ### Endpoints
 
