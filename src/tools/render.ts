@@ -1,13 +1,11 @@
 import { z } from 'zod'
 import { writeFile } from 'node:fs/promises'
 import { resolve as resolvePath } from 'node:path'
-import { parseDsl } from '../parse'
-import { validateAst } from '../dsl/validate'
 import { extractFrameMetadata, type FrameMetadata } from '../render/frame'
-import { diagnoseRender } from '../render/diagnose'
 import { renderSceneState } from '../render/renderSceneState'
 import { rasterizeToPng } from '../render/rasterize'
-import { ErrorCode, toolError, toolOk, type ToolErrorEntry, type ToolResult } from '../errors'
+import { validatePipeline } from '../render/validatePipeline'
+import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 
 export const RenderInputSchema = z.object({
   source: z.string(),
@@ -70,38 +68,12 @@ export async function renderTool(input: unknown): Promise<ToolResult<RenderOutpu
     }])
   }
 
-  const parseResult = parseDsl(source)
-  if (!parseResult.ok) {
-    return parseResult
+  const validated = validatePipeline(source, { sceneIndex: scene })
+  if (!validated.ok) {
+    return validated.error
   }
 
-  // Layer 1: semantic validation (chart type, properties, empty data).
-  const issues = validateAst(parseResult.data.ast)
-  if (issues.length > 0) {
-    const entries: ToolErrorEntry[] = issues.map(i => ({
-      code: i.code,
-      path: i.path,
-      message: i.message,
-      suggestion: i.suggestion,
-      context: i.context,
-    }))
-    return toolError(ErrorCode.E_SEMANTIC, entries)
-  }
-
-  // Layer 2: render-state diagnostic (colorize/highlight resolution, scene index).
-  const diag = diagnoseRender(source, { sceneIndex: scene })
-  if (!diag.ok) {
-    const entries: ToolErrorEntry[] = diag.diagnostics.map(d => ({
-      code: d.code,
-      path: d.path,
-      message: d.message,
-      suggestion: d.suggestion,
-      context: d.context,
-    }))
-    return toolError(ErrorCode.E_RENDER, entries)
-  }
-
-  const frame = extractFrameMetadata(parseResult.data.ast)
+  const frame = extractFrameMetadata(validated.ast)
 
   // Layer 3: actual render.
   let svg: string
