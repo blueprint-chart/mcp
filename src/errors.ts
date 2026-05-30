@@ -3,6 +3,7 @@ export const ErrorCode = {
   E_PARSE: 'E_PARSE',
   E_SEMANTIC: 'E_SEMANTIC',
   E_RENDER: 'E_RENDER',
+  E_CONFIG: 'E_CONFIG',
   E_INTERNAL: 'E_INTERNAL',
 } as const
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode]

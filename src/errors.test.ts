@@ -23,6 +23,10 @@ describe('errors', () => {
     const r = toolError(ErrorCode.E_INTERNAL, [{ message: 'x' }])
     expect(isToolError(r)).toBe(true)
   })
+
+  it('includes E_CONFIG for missing server configuration', () => {
+    expect(ErrorCode.E_CONFIG).toBe('E_CONFIG')
+  })
 })
 
 describe('ToolErrorEntry structured fields', () => {
