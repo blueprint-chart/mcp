@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { getDoc, listDocs } from '@blueprint-chart/docs'
 import { aliasesFor, listCanonicalChartTypes } from '../dsl/chartTypes'
+import { publicDocUrl } from '../resources/docsReader'
 import { toolOk, type ToolResult } from '../errors'
 
 export const ListChartTypesInputSchema = z.object({}).strict()
@@ -10,6 +11,7 @@ export interface ChartTypeListEntry {
   name: string
   aliases: string[]
   summary: string
+  docsUrl?: string
 }
 
 export interface ListChartTypesOutput {
@@ -39,10 +41,17 @@ function summaryFor(name: string): string {
 }
 
 export function listChartTypes(): ToolResult<ListChartTypesOutput> {
-  const chartTypes = listCanonicalChartTypes().map(name => ({
-    name,
-    aliases: aliasesFor(name),
-    summary: summaryFor(name),
-  }))
+  const chartTypes = listCanonicalChartTypes().map((name) => {
+    const entry: ChartTypeListEntry = {
+      name,
+      aliases: aliasesFor(name),
+      summary: summaryFor(name),
+    }
+    const docsUrl = publicDocUrl('charts', name)
+    if (docsUrl) {
+      entry.docsUrl = docsUrl
+    }
+    return entry
+  })
   return toolOk({ chartTypes })
 }
