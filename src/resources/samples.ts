@@ -2,7 +2,7 @@ import { samples } from '@blueprint-chart/lib'
 
 const PREFIX = 'bpc://samples/'
 
-interface SampleResource {
+export interface SampleResource {
   uri: string
   name: string
   description?: string

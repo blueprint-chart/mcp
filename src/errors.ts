@@ -40,7 +40,7 @@ export function toolOk<T>(data: T): ToolResult<T> {
   return { ok: true, data }
 }
 
-export function toolError<T = never>(code: ErrorCode, errors: ToolErrorEntry[]): ToolResult<T> {
+export function toolError<T = never>(code: ErrorCode, errors: ToolErrorEntry[]): Extract<ToolResult<T>, { ok: false }> {
   return { ok: false, code, errors }
 }
 
