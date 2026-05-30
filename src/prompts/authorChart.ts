@@ -10,6 +10,7 @@ Workflow:
 7. Call \`inspect_dsl\` to sanity-check structure: \`data.rowCount\` confirms rows parsed, \`hasHighlights\`/\`hasColorizes\` confirm overrides.
 8. Call \`render({ source, format: "png" })\` for a visual. If \`errors[]\` is non-empty, each entry has \`code\` and a usable \`suggestion\`.
 9. Return the final \`.bpc\` and rendered chart to the user.
+10. If the user wants to share or embed the chart, call \`export_chart({ source })\` and give them \`copyUrl\` (editable — anyone can open and copy it) or \`embedUrl\` (a read-only render URL for an iframe). Requires the server to have BLUEPRINT_CHART_EDITOR_URL configured; otherwise it returns \`E_CONFIG\`.
 
 Resources you can read (if your client supports MCP resources):
 - \`bpc://grammar\` — DSL syntax reference (use \`get_grammar\` as a tool equivalent)
@@ -28,6 +29,7 @@ Tools:
 - \`describe_chart_type({name})\` — properties, when-to-use, data-shape for one chart type (tool equivalent of \`bpc://chart-types/{slug}\`)
 - \`get_example({chartType?, name?})\` — fetch a canonical \`.bpc\` sample (tool equivalent of \`bpc://samples/{id}\`)
 - \`get_grammar()\` — full DSL syntax reference (tool equivalent of \`bpc://grammar\`)
+- \`export_chart({source})\` — validate then return \`{ copyUrl, embedUrl, frame }\` shareable editor URLs (returns \`E_CONFIG\` if the server has no editor URL configured)
 
 Be patient with errors — the feedback loop is the point.`
 

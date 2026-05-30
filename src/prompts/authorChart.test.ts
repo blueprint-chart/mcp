@@ -11,4 +11,11 @@ describe('authorChartPrompt', () => {
     expect((first.content as { text: string }).text).toMatch(/bpc:\/\/grammar/)
     expect((first.content as { text: string }).text).toMatch(/validate_dsl/)
   })
+
+  it('mentions export_chart and the export step', () => {
+    const prompt = authorChartPrompt()
+    const text = prompt.messages[0]!.content.text
+    expect(text).toContain('export_chart')
+    expect(text).toMatch(/copyUrl/)
+  })
 })
