@@ -1,10 +1,13 @@
 import { getDoc, listDocs, type DocGroup, type DocEntry } from '@blueprint-chart/docs'
+import { getDocsBaseUrl } from '../links/editorConfig'
+import { buildDocUrl, type DocUrlGroup } from '../links/buildUrls'
 
 export interface UriResource {
   uri: string
   name: string
   description?: string
   mimeType: string
+  docsUrl?: string
 }
 
 const GROUP_TO_URI: Record<DocGroup, string> = {
@@ -21,15 +24,31 @@ const URI_TO_GROUP: Array<{ prefix: string, group: DocGroup }> = (
 
 const GRAMMAR_URI = 'bpc://grammar'
 
+/** Public docs page URL for a docs group + slug, or undefined when docs base is unset. */
+export function publicDocUrl(group: DocGroup, slug: string): string | undefined {
+  const base = getDocsBaseUrl()
+  if (!base) {
+    return undefined
+  }
+  return buildDocUrl(group as DocUrlGroup, slug, base)
+}
+
 export function listAllResources(): UriResource[] {
   const groups = Object.keys(GROUP_TO_URI) as DocGroup[]
   const docResources = groups.flatMap(group =>
-    listDocs(group).map(entry => ({
-      uri: `${GROUP_TO_URI[group]}${entry.slug}`,
-      name: entry.title,
-      description: entry.blurb,
-      mimeType: 'text/markdown',
-    })),
+    listDocs(group).map((entry) => {
+      const resource: UriResource = {
+        uri: `${GROUP_TO_URI[group]}${entry.slug}`,
+        name: entry.title,
+        description: entry.blurb,
+        mimeType: 'text/markdown',
+      }
+      const docsUrl = publicDocUrl(group, entry.slug)
+      if (docsUrl) {
+        resource.docsUrl = docsUrl
+      }
+      return resource
+    }),
   )
   return [
     {
