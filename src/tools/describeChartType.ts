@@ -6,6 +6,7 @@ import { aliasesFor, canonicalChartType, listCanonicalChartTypes } from '../dsl/
 import { nearestSuggestion } from '../dsl/suggest'
 import { UNIVERSAL_PROPERTIES, UNIVERSAL_PROPERTY_META } from '../dsl/universalProperties'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
+import { publicDocUrl } from '../resources/docsReader'
 
 export const DescribeChartTypeInputSchema = z.object({
   chartType: z.string(),
@@ -34,6 +35,7 @@ export interface DescribeChartTypeOutput {
   properties: ChartTypeProperty[]
   dataShape: ChartTypeDataShape
   exampleSlug?: string
+  docsUrl?: string
 }
 
 function extractDocSections(name: string): {
@@ -149,7 +151,7 @@ export function describeChartType(input: unknown): ToolResult<DescribeChartTypeO
   const sample = samples.find(s => s.chartType === canonical)
   const exampleText = doc.example || sample?.dsl || ''
 
-  return toolOk({
+  const output: DescribeChartTypeOutput = {
     name: canonical,
     aliases: aliasesFor(canonical),
     summary: doc.summary,
@@ -158,5 +160,10 @@ export function describeChartType(input: unknown): ToolResult<DescribeChartTypeO
     properties,
     dataShape: inferDataShape(canonical, exampleText),
     exampleSlug: sample?.id,
-  })
+  }
+  const docsUrl = publicDocUrl('charts', canonical)
+  if (docsUrl) {
+    output.docsUrl = docsUrl
+  }
+  return toolOk(output)
 }

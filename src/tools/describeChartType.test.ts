@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { describeChartType } from './describeChartType'
 
 describe('describe_chart_type', () => {
+  afterEach(() => {
+    delete process.env.BLUEPRINT_CHART_DOCS_URL
+  })
   it('returns properties + summary for bar-horizontal', () => {
     const r = describeChartType({ chartType: 'bar-horizontal' })
     expect(r.ok).toBe(true)
@@ -39,6 +42,23 @@ describe('describe_chart_type', () => {
     if (r.ok) {
       expect(r.data.dataShape.kind).toMatch(/single-series|multi-series/)
       expect(r.data.dataShape.example).toContain('data')
+    }
+  })
+
+  it('omits docsUrl when docs base is unset', () => {
+    const result = describeChartType({ chartType: 'bar-vertical' })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data.docsUrl).toBeUndefined()
+    }
+  })
+
+  it('includes a top-level docsUrl when docs base is set', () => {
+    process.env.BLUEPRINT_CHART_DOCS_URL = 'https://docs.blueprintchart.com'
+    const result = describeChartType({ chartType: 'bar-vertical' })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data.docsUrl).toBe('https://docs.blueprintchart.com/charts/bar-vertical')
     }
   })
 })
