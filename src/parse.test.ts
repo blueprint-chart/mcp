@@ -22,6 +22,15 @@ describe('parseDsl', () => {
     }
   })
 
+  it('humanizes the parser message (YAML-colon case flows through parse.ts)', () => {
+    const r = parseDsl('chart: donut { data { "A" = 1 } }')
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.code).toBe('E_PARSE')
+      expect(r.errors[0]!.message).toContain('chart <type> {')
+    }
+  })
+
   it('returns E_INPUT for non-string input', () => {
     const r = parseDsl(123)
     expect(r.ok).toBe(false)
