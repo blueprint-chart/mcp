@@ -33,3 +33,22 @@ describe('validate_dsl', () => {
     }
   })
 })
+
+describe('validate_dsl warnings', () => {
+  it('stays valid but surfaces a no-op warning for sort on donut', () => {
+    const r = validateDsl({ source: 'chart donut {\n  sort = descending\n  data { "A" = 1 }\n}' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.valid).toBe(true)
+      expect(r.data.warnings.some(w => w.code === 'W_NO_EFFECT')).toBe(true)
+    }
+  })
+
+  it('emits no warnings for a clean chart', () => {
+    const r = validateDsl({ source: 'chart bar-vertical {\n  data { "A" = 1 }\n}' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.warnings).toEqual([])
+    }
+  })
+})

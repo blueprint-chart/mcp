@@ -6,7 +6,8 @@ import { lookupCapability, statusOf } from './capabilityMatrix'
 // ValidationIssue.code is a strict union of error codes; our warning codes are
 // new string literals. We use a local alias that widens `code` to `string` so
 // TS accepts our warning objects while consumers still get the full interface.
-type WarningIssue = Omit<ValidationIssue, 'code'> & { code: string }
+/** Like ValidationIssue but with a widened string `code` for the new W_* advisory codes. */
+export type WarningIssue = Omit<ValidationIssue, 'code'> & { code: string }
 
 // Chart types that REQUIRE multiple series to be meaningful.
 const MULTI_SERIES_TYPES = new Set([
