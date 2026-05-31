@@ -50,9 +50,10 @@ function summarizeScenes(ast: ChartNode): SceneSummary[] {
 function summarizeData(ast: ChartNode): DataSummary {
   const entries = ast.data?.entries ?? []
   const seriesEntry = entries.find(e => e.key === '_series')
-  const seriesNames = seriesEntry
-    ? String(seriesEntry.value).split(',').map(s => s.trim().replace(/^"|"$/g, ''))
+  const seriesValues = seriesEntry
+    ? (seriesEntry.values ?? [seriesEntry.value])
     : []
+  const seriesNames = seriesValues.map(v => String(v).trim().replace(/^"|"$/g, ''))
   const rowEntries = entries.filter(looksLikeQuotedLabel)
   return {
     rowCount: rowEntries.length,
@@ -64,18 +65,23 @@ function summarizeData(ast: ChartNode): DataSummary {
 }
 
 function countHighlights(ast: ChartNode): number {
-  // Grammar: `highlight "X" { … }` parses as ColorizeNode with fromHighlight:true,
-  // `highlight "X"` (no braces) parses as HighlightNode. Count both.
-  const fromHighlightColorizes = (ast.colorizes ?? []).filter(
-    (c: ColorizeNode) => c.fromHighlight === true,
-  ).length
-  return (ast.highlights?.length ?? 0) + fromHighlightColorizes
+  // `highlight "X" { … }` parses as ColorizeNode with fromHighlight:true,
+  // `highlight "X"` (no braces) parses as HighlightNode. Count both, at the
+  // chart level AND inside every scene (scenes carry their own highlights).
+  // unknown[]: only .length is read, so element type is irrelevant here
+  const countIn = (node: { highlights?: unknown[], colorizes?: ColorizeNode[] }): number => {
+    const fromHighlightColorizes = (node.colorizes ?? []).filter(c => c.fromHighlight === true).length
+    return (node.highlights?.length ?? 0) + fromHighlightColorizes
+  }
+  const sceneTotal = (ast.scenes ?? []).reduce((sum, s) => sum + countIn(s), 0)
+  return countIn(ast) + sceneTotal
 }
 
 function countNonHighlightColorizes(ast: ChartNode): number {
-  return (ast.colorizes ?? []).filter(
-    (c: ColorizeNode) => c.fromHighlight !== true,
-  ).length
+  const countIn = (cs: ColorizeNode[] | undefined): number =>
+    (cs ?? []).filter(c => c.fromHighlight !== true).length
+  const sceneTotal = (ast.scenes ?? []).reduce((sum, s) => sum + countIn(s.colorizes), 0)
+  return countIn(ast.colorizes) + sceneTotal
 }
 
 export function inspectDsl(input: InspectInput): ToolResult<InspectOutput> {

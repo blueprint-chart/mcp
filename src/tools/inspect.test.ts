@@ -54,3 +54,33 @@ describe('inspect_dsl', () => {
     expect(r.ok).toBe(false)
   })
 })
+
+describe('inspect_dsl fixes', () => {
+  it('lists ALL series names from the _series header', () => {
+    const src = 'chart bar-multi {\n  data {\n    _series = "Hardware","Software","Services"\n    "Q1" = 1,2,3\n  }\n}'
+    const r = inspectDsl({ source: src })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.data.seriesNames).toEqual(['Hardware', 'Software', 'Services'])
+      expect(r.data.data.multiSeries).toBe(true)
+    }
+  })
+
+  it('reports hasHighlights:true when a highlight lives inside a scene', () => {
+    const src = 'chart area-stacked {\n  data {\n    _series = "A","B"\n    "2000" = 1,2\n  }\n  scene "S1" {\n    highlight "A"\n  }\n}'
+    const r = inspectDsl({ source: src })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.hasHighlights).toBe(true)
+    }
+  })
+
+  it('reports hasColorizes:true when a colorize lives inside a scene', () => {
+    const src = 'chart area-stacked {\n  data {\n    _series = "A","B"\n    "2000" = 1,2\n  }\n  scene "S1" {\n    colorize "A" { color = "#f00" }\n  }\n}'
+    const r = inspectDsl({ source: src })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.hasColorizes).toBe(true)
+    }
+  })
+})
