@@ -14,7 +14,7 @@ async function connectInMemory() {
 }
 
 describe('TOOLS registry', () => {
-  it('contains the nine expected tool names', () => {
+  it('contains the eleven expected tool names', () => {
     expect(Object.keys(TOOLS).sort()).toEqual([
       'describe_chart_type',
       'export_chart',
@@ -22,15 +22,17 @@ describe('TOOLS registry', () => {
       'get_grammar',
       'inspect_dsl',
       'list_chart_types',
+      'list_palettes',
       'recommend_chart_type',
       'render',
+      'search_examples',
       'validate_dsl',
     ])
   })
 })
 
 describe('server', () => {
-  it('lists 9 tools', async () => {
+  it('lists 11 tools', async () => {
     const { client } = await connectInMemory()
     const r = await client.listTools()
     const names = r.tools.map(t => t.name).sort()
@@ -41,8 +43,10 @@ describe('server', () => {
       'get_grammar',
       'inspect_dsl',
       'list_chart_types',
+      'list_palettes',
       'recommend_chart_type',
       'render',
+      'search_examples',
       'validate_dsl',
     ])
   })

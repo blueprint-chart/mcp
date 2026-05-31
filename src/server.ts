@@ -19,6 +19,8 @@ import { describeChartType, DescribeChartTypeInputSchema } from './tools/describ
 import { getExample, GetExampleInputSchema } from './tools/getExample'
 import { getGrammar, GetGrammarInputSchema } from './tools/getGrammar'
 import { exportChart, ExportChartInputSchema } from './tools/exportChart'
+import { searchExamples, SearchExamplesInputSchema } from './tools/searchExamples'
+import { listPalettesTool, ListPalettesInputSchema } from './tools/listPalettes'
 import { listResources, readResource } from './resources/index'
 import { authorChartPrompt } from './prompts/authorChart'
 import { zodToJsonSchema } from './lib/zodToJsonSchema'
@@ -94,6 +96,16 @@ export const TOOLS: Record<string, ToolDef> = {
     description: 'Return a canonical .bpc example. Pass { name } for a specific sample id, { chartType } for the first sample of that type, or no args for a starter sample.',
     inputSchema: GetExampleInputSchema,
     handler: args => getExample(args),
+  },
+  search_examples: {
+    description: 'Find canonical .bpc examples by topic keywords and/or chart type. Returns ranked pointers { id, title, description, chartType } — call get_example with an id to fetch the full DSL.',
+    inputSchema: SearchExamplesInputSchema,
+    handler: args => searchExamples(args),
+  },
+  list_palettes: {
+    description: 'List every named colour palette with its label and hex colours, for use in `colorPalette = "<name>"`.',
+    inputSchema: ListPalettesInputSchema,
+    handler: () => listPalettesTool(),
   },
   get_grammar: {
     description: 'Return the .bpc DSL grammar as markdown. Pass { section: "chart" | "data" | "properties" | "scenes" | "annotations" } for a focused subset, or no args for the full grammar.',
