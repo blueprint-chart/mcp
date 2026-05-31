@@ -7,6 +7,7 @@ import { nearestSuggestion } from '../dsl/suggest'
 import { UNIVERSAL_PROPERTIES, UNIVERSAL_PROPERTY_META } from '../dsl/universalProperties'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 import { publicDocUrl } from '../resources/docsReader'
+import { lookupCapability, statusOf, type CapabilityStatus } from '../dsl/capabilityMatrix'
 
 export const DescribeChartTypeInputSchema = z.object({
   chartType: z.string(),
@@ -21,6 +22,13 @@ export interface ChartTypeProperty {
   default?: unknown
 }
 
+export interface ChartTypeDirective {
+  name: string
+  status: CapabilityStatus
+  description: string
+  note?: string
+}
+
 export interface ChartTypeDataShape {
   kind: 'single-series' | 'multi-series' | 'unknown'
   example: string
@@ -33,6 +41,7 @@ export interface DescribeChartTypeOutput {
   whenToUse: string[]
   whenNotToUse: string[]
   properties: ChartTypeProperty[]
+  directives: ChartTypeDirective[]
   dataShape: ChartTypeDataShape
   exampleSlug?: string
   docsUrl?: string
@@ -126,6 +135,29 @@ function inferDataShape(name: string, example: string): ChartTypeDataShape {
   return { kind: 'unknown', example: 'data {\n  "Label" = 1.0\n}' }
 }
 
+const DIRECTIVE_DOCS: ReadonlyArray<{ name: string, description: string }> = [
+  { name: 'highlight', description: 'Emphasise one category/series, e.g. `highlight "China"`.' },
+  { name: 'colorize', description: 'Override colour for a category/series, e.g. `colorize "China" { color = "#f00" }`.' },
+  { name: 'annotation', description: 'Attach a callout to a data point, e.g. `annotation "2009" { text = "…" }`.' },
+  { name: 'transform', description: 'Reshape data, e.g. `transform sort { column = "value" direction = descending }`.' },
+  { name: 'scene', description: 'Add a narrative step that overrides data/properties, e.g. `scene "Step 2" { … }`.' },
+]
+
+function buildDirectives(canonical: string): ChartTypeDirective[] {
+  return DIRECTIVE_DOCS.map((d) => {
+    const cell = lookupCapability(canonical, d.name)
+    const directive: ChartTypeDirective = {
+      name: d.name,
+      status: statusOf(cell),
+      description: d.description,
+    }
+    if (cell.note) {
+      directive.note = cell.note
+    }
+    return directive
+  })
+}
+
 export function describeChartType(input: unknown): ToolResult<DescribeChartTypeOutput> {
   const parsed = DescribeChartTypeInputSchema.safeParse(input)
   if (!parsed.success) {
@@ -148,6 +180,7 @@ export function describeChartType(input: unknown): ToolResult<DescribeChartTypeO
 
   const doc = extractDocSections(canonical)
   const properties = buildProperties(canonical)
+  const directives = buildDirectives(canonical)
   const sample = samples.find(s => s.chartType === canonical)
   const exampleText = doc.example || sample?.dsl || ''
 
@@ -158,6 +191,7 @@ export function describeChartType(input: unknown): ToolResult<DescribeChartTypeO
     whenToUse: doc.whenToUse,
     whenNotToUse: doc.whenNotToUse,
     properties,
+    directives,
     dataShape: inferDataShape(canonical, exampleText),
     exampleSlug: sample?.id,
   }

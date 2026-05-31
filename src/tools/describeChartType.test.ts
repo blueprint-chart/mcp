@@ -62,3 +62,26 @@ describe('describe_chart_type', () => {
     }
   })
 })
+
+describe('describe_chart_type directives', () => {
+  it('lists highlight/colorize/annotation directives with status', () => {
+    const r = describeChartType({ chartType: 'bar-vertical' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      const names = r.data.directives.map(d => d.name)
+      expect(names).toEqual(expect.arrayContaining(['highlight', 'colorize', 'annotation']))
+      const highlight = r.data.directives.find(d => d.name === 'highlight')
+      expect(highlight?.status).toBe('supported')
+    }
+  })
+
+  it('marks colorize not-implemented on donut', () => {
+    const r = describeChartType({ chartType: 'donut' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      const colorize = r.data.directives.find(d => d.name === 'colorize')
+      expect(colorize?.status).toBe('not-implemented')
+      expect(colorize?.note).toBeTruthy()
+    }
+  })
+})
