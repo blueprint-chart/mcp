@@ -1,5 +1,11 @@
 .claude
 .claude-flow
+.mcp.json
+.swarm
+agentdb.rvf
+agentdb.rvf.lock
+ruvector.db
+test-results
 docs/superpowers
 node_modules
 dist
