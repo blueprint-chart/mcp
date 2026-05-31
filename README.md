@@ -57,11 +57,12 @@ claude mcp add blueprint-chart \
 | `validate_dsl` | Parse `.bpc`; returns `{ valid, errors[], warnings[] }` — each error has `code`, `message`, `suggestion` |
 | `inspect_dsl` | Parse and summarize: `chartType`, `scenes`, `seriesCount`, `rowCount`, `hasHighlights`, `hasColorizes`, etc. |
 | `recommend_chart_type` | Rank chart types for a given column shape and row count |
-| `render` | Render to SVG (default) or PNG; structured `errors[]` (each with `code` + `suggestion`) on failure |
+| `render` | Render to SVG (default), PNG, or HTML; always returns structured frame metadata, with structured `errors[]` (each with `code` + `suggestion`) on failure. Pass `save: <path>` to write the output to disk (requires `MCP_ALLOW_FS_WRITE=1`) |
 | `list_chart_types` | List all renderable chart types (tool equivalent of `bpc://handbook/choosing`) |
-| `describe_chart_type` | Properties, when-to-use, and data-shape for one chart type (tool equivalent of `bpc://chart-types/{slug}`) |
+| `describe_chart_type` | Properties, when-to-use, when-NOT-to-use, and data-shape for one chart type (tool equivalent of `bpc://chart-types/{slug}`) |
 | `get_example` | Fetch a canonical `.bpc` sample by chart type or sample name (tool equivalent of `bpc://samples/{id}`) |
 | `get_grammar` | Full DSL syntax reference (tool equivalent of `bpc://grammar`) |
+| `export_chart` | Validate a `.bpc` and return shareable editor URLs — an editable `copyUrl` and a read-only `embedUrl` for iframes (requires `BLUEPRINT_CHART_EDITOR_URL`) |
 
 The four discovery tools (`list_chart_types`, `describe_chart_type`, `get_example`, `get_grammar`) let clients without MCP resource support access the same reference material that the `bpc://` URIs expose.
 
@@ -208,7 +209,7 @@ Response:
 }
 ```
 
-### `render` — SVG (default) or PNG
+### `render` — SVG (default), PNG, or HTML
 
 Request:
 
