@@ -25,3 +25,15 @@ describe('get_grammar', () => {
     expect(r.ok).toBe(false)
   })
 })
+
+describe('get_grammar section resolution', () => {
+  it('returns non-empty text for every enum section', () => {
+    for (const section of ['all', 'chart', 'properties', 'scenes', 'annotations'] as const) {
+      const r = getGrammar({ section })
+      expect(r.ok, `section ${section} should resolve`).toBe(true)
+      if (r.ok) {
+        expect(r.data.text.length).toBeGreaterThan(0)
+      }
+    }
+  })
+})

@@ -15,7 +15,7 @@ export interface GetGrammarOutput {
 }
 
 const SECTION_TO_SLUG: Record<Exclude<GetGrammarOutput['section'], 'all'>, string> = {
-  chart: 'index',
+  chart: 'properties', // reference/dsl has no standalone chart-block doc; properties.md covers the block + properties
   properties: 'properties',
   scenes: 'scenes-and-transforms',
   annotations: 'annotations',
