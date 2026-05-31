@@ -17,7 +17,7 @@
 
 </div>
 
-The MCP exposes Blueprint Chart's dataviz handbook, DSL grammar reference, chart-type docs, and canonical samples as MCP resources, plus eight deterministic tools: `validate_dsl`, `inspect_dsl`, `recommend_chart_type`, `render`, `list_chart_types`, `describe_chart_type`, `get_example`, and `get_grammar`. Your LLM writes the `.bpc`; the MCP grounds it in real dataviz pedagogy and gives it a tight feedback loop.
+The MCP exposes Blueprint Chart's dataviz handbook, DSL grammar reference, chart-type docs, and canonical samples as MCP resources, plus eleven deterministic tools: `validate_dsl`, `inspect_dsl`, `recommend_chart_type`, `render`, `list_chart_types`, `describe_chart_type`, `get_example`, `get_grammar`, `export_chart`, `search_examples`, and `list_palettes`. Your LLM writes the `.bpc`; the MCP grounds it in real dataviz pedagogy and gives it a tight feedback loop.
 
 ## Install
 
@@ -61,10 +61,12 @@ claude mcp add blueprint-chart \
 | `list_chart_types` | List all renderable chart types (tool equivalent of `bpc://handbook/choosing`) |
 | `describe_chart_type` | Properties, when-to-use, when-NOT-to-use, and data-shape for one chart type (tool equivalent of `bpc://chart-types/{slug}`) |
 | `get_example` | Fetch a canonical `.bpc` sample by chart type or sample name (tool equivalent of `bpc://samples/{id}`) |
+| `search_examples` | Find canonical examples by topic keywords and/or chart type (returns pointers; fetch full DSL with `get_example`) |
 | `get_grammar` | Full DSL syntax reference (tool equivalent of `bpc://grammar`) |
+| `list_palettes` | List named colour palettes with hex colours for `colorPalette` |
 | `export_chart` | Validate a `.bpc` and return shareable editor URLs — an editable `copyUrl` and a read-only `embedUrl` for iframes (requires `BLUEPRINT_CHART_EDITOR_URL`) |
 
-The four discovery tools (`list_chart_types`, `describe_chart_type`, `get_example`, `get_grammar`) let clients without MCP resource support access the same reference material that the `bpc://` URIs expose.
+The discovery tools (`list_chart_types`, `describe_chart_type`, `get_example`, `search_examples`, `get_grammar`, `list_palettes`) let clients without MCP resource support access the same reference material that the `bpc://` URIs expose.
 
 ## Resources
 
