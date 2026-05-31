@@ -34,4 +34,12 @@ describe('recommend_chart_type', () => {
       expect(r.code).toBe('E_INPUT')
     }
   })
+
+  it('reorders toward part-to-whole when a goal says "share of total"', () => {
+    const r = recommendChartType({ columnTypes: ['string', 'number'], rowCount: 5, goal: 'each region as a share of the total' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(['pie', 'donut', 'bar-stacked', 'column-stacked']).toContain(r.data.recommendations[0]?.chartType)
+    }
+  })
 })
