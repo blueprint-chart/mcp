@@ -16,9 +16,9 @@ describe('collectWarnings', () => {
     expect(w.some(i => i.code === 'W_NO_EFFECT' && i.path === 'chart.sort')).toBe(true)
   })
 
-  it('warns W_NOT_IMPLEMENTED for colorize on donut', () => {
+  it('does not warn for colorize on donut (now supported since W1c)', () => {
     const w = warn('chart donut {\n  data { "A" = 1 }\n  colorize "A" { color = "#f00" }\n}')
-    expect(w.some(i => i.code === 'W_NOT_IMPLEMENTED' && i.path.includes('colorize'))).toBe(true)
+    expect(w.some(i => i.path.includes('colorize'))).toBe(false)
   })
 
   it('warns W_MULTISERIES_SHAPE when a multi-series type parsed zero series', () => {

@@ -15,8 +15,17 @@ describe('capabilityMatrix', () => {
     expect(cell.note).toBeTruthy()
   })
 
-  it('marks colorize on donut as not-implemented (renderer ignores it today)', () => {
-    expect(statusOf(lookupCapability('donut', 'colorize'))).toBe('not-implemented')
+  it('marks colorize supported on donut/pie (W1c shipped per-slice colorize)', () => {
+    expect(statusOf(lookupCapability('donut', 'colorize'))).toBe('supported')
+    expect(statusOf(lookupCapability('pie', 'colorize'))).toBe('supported')
+  })
+
+  it('marks colorize inapplicable on single-series line/area, supported on multi-series (W1c)', () => {
+    expect(statusOf(lookupCapability('line', 'colorize'))).toBe('inapplicable')
+    expect(lookupCapability('line', 'colorize').note).toBeTruthy()
+    expect(statusOf(lookupCapability('area', 'colorize'))).toBe('inapplicable')
+    expect(statusOf(lookupCapability('line-multi', 'colorize'))).toBe('supported')
+    expect(statusOf(lookupCapability('bar-multi', 'colorize'))).toBe('supported')
   })
 
   it('marks highlight inapplicable on single-series line/area, supported on multi-series (W1b)', () => {

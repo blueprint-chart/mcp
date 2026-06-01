@@ -75,13 +75,12 @@ describe('describe_chart_type directives', () => {
     }
   })
 
-  it('marks colorize not-implemented on donut', () => {
+  it('marks colorize supported on donut (W1c shipped per-slice colorize)', () => {
     const r = describeChartType({ chartType: 'donut' })
     expect(r.ok).toBe(true)
     if (r.ok) {
       const colorize = r.data.directives.find(d => d.name === 'colorize')
-      expect(colorize?.status).toBe('not-implemented')
-      expect(colorize?.note).toBeTruthy()
+      expect(colorize?.status).toBe('supported')
     }
   })
 })
