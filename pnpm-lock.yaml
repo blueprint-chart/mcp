@@ -12,8 +12,8 @@ importers:
         specifier: 0.1.20
         version: 0.1.20
       '@blueprint-chart/lib':
-        specifier: 0.1.23
-        version: 0.1.23(d3-selection@3.0.0)
+        specifier: 0.1.24
+        version: 0.1.24(d3-selection@3.0.0)
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0
         version: 1.29.0(zod@3.25.76)
@@ -69,8 +69,8 @@ packages:
   '@blueprint-chart/docs@0.1.20':
     resolution: {integrity: sha512-IVGWEt/RbH0VDTUET13FrljjqO7JXO3YkTgDujfMyXAre69tZNuNbrcMtteAmzxeodc0GX6Gf3Vjyu5DxTYTnQ==}
 
-  '@blueprint-chart/lib@0.1.23':
-    resolution: {integrity: sha512-8dBMlaT1mBkxZ25MMb/BdyRKm1PtmuwcZPfvtJ4IWRbSq5U8cOGnDBslosB722St/r9a4oMZdRw+hv7uBSn6KQ==}
+  '@blueprint-chart/lib@0.1.24':
+    resolution: {integrity: sha512-HB7SvYQzHnKsH867Lxby7wJg3z8g8wBYX6ZVJgXuICZiQx5QSOcd58KqQMvewHosJPFDNS2whhOeodQf8Q9vHw==}
 
   '@csstools/color-helpers@5.1.0':
     resolution: {integrity: sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA==}
@@ -2022,7 +2022,7 @@ snapshots:
 
   '@blueprint-chart/docs@0.1.20': {}
 
-  '@blueprint-chart/lib@0.1.23(d3-selection@3.0.0)':
+  '@blueprint-chart/lib@0.1.24(d3-selection@3.0.0)':
     dependencies:
       '@floating-ui/dom': 1.7.6
       chroma-js: 3.2.0
