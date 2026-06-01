@@ -78,7 +78,7 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: args => recommendChartType(args),
   },
   render: {
-    description: 'Render a .bpc source to SVG (default), PNG, or HTML. Always returns structured frame metadata (title, description, byline, source, sourceUrl, note). Pass `save: <path>` to write the primary output to disk and omit it from the response — useful when the LLM client cannot display binary payloads inline. Saving requires MCP_FS_WRITE_DIR to be set; the path resolves inside that directory (relative paths are joined to it, absolute paths must stay within it) and writes outside it are rejected.',
+    description: 'Render a .bpc source to SVG (default), PNG, or HTML. Always returns structured frame metadata (title, description, byline, source, sourceUrl, note). Pass `save: <path>` to write the primary output to disk and omit it from the response — useful when the LLM client cannot display binary payloads inline. Saving requires MCP_FS_WRITE_DIR to be set; the output always lands inside that directory — relative paths are joined to it and absolute paths are re-anchored under it (e.g. `/tmp/x.png` becomes `<dir>/tmp/x.png`), so any path you pass stays in the sandbox; only `../` traversal that escapes it is rejected.',
     inputSchema: RenderInputSchema,
     handler: args => renderTool(args),
   },

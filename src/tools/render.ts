@@ -13,7 +13,7 @@ export const RenderInputSchema = z.object({
   scene: z.number().int().nonnegative().optional(),
   width: z.number().int().positive().default(800),
   height: z.number().int().positive().default(500),
-  /** Optional file path (relative to MCP_FS_WRITE_DIR, or an absolute path that must resolve inside it). When provided, the primary output (PNG bytes / SVG / HTML) is written to that path and the inline content is omitted from the response. Requires MCP_FS_WRITE_DIR to be set; writes are confined to that directory. */
+  /** Optional file path for the output. Always resolved inside MCP_FS_WRITE_DIR: relative paths are joined to it, and absolute paths are re-anchored under it (e.g. `/tmp/x.png` → `<dir>/tmp/x.png`), so any value lands in the sandbox. When provided, the primary output (PNG bytes / SVG / HTML) is written there and the inline content is omitted from the response. Requires MCP_FS_WRITE_DIR to be set; only `../` traversal that escapes the directory is rejected. */
   save: z.string().optional(),
 })
 export type RenderInput = z.infer<typeof RenderInputSchema>
@@ -41,7 +41,25 @@ type SaveResolution =
   | { ok: true, absPath: string }
   | { ok: false, code: string, message: string }
 
-/** Resolve `save` against the sandbox root and verify (lexically) that it stays inside it. */
+/**
+ * True when `target` (an already-resolved absolute path) is not a writable location
+ * strictly inside `jail`. Covers the jail root itself (rel === '', e.g. "" or "."),
+ * parent-directory traversal, and any path on a different root.
+ */
+function escapesJail(jail: string, target: string): boolean {
+  const rel = relativePath(jail, target)
+  return rel === '' || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)
+}
+
+/**
+ * Resolve `save` to an absolute path confined to the sandbox root. The sandbox is the
+ * single source of truth for where files land:
+ * - a relative path, or an absolute path already inside the jail, is used as-is;
+ * - any other absolute path (one that would land outside the jail) is re-anchored
+ *   *as if it were jail-relative* by stripping its leading separators and joining the
+ *   remainder under the jail — so `/tmp/foo.png` becomes `<jail>/tmp/foo.png`;
+ * - a path that still escapes via `..` traversal after re-anchoring is rejected.
+ */
 function resolveSavePath(save: string): SaveResolution {
   const jail = getJailRoot()
   if (jail === null) {
@@ -51,16 +69,18 @@ function resolveSavePath(save: string): SaveResolution {
       message: 'File saving is disabled. Set MCP_FS_WRITE_DIR=<dir> to enable and confine writes to that directory.',
     }
   }
-  const absPath = resolvePath(jail, save)
-  const rel = relativePath(jail, absPath)
-  // rel === '' means `save` resolves to the jail root itself (e.g. "" or "."), which is not a writable file path;
-  // group it with true escapes — all are rejected as out-of-sandbox.
-  const escapes = rel === '' || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)
-  if (escapes) {
-    return {
-      ok: false,
-      code: 'E_FS_WRITE_ESCAPE',
-      message: `save path "${save}" resolves outside the configured MCP_FS_WRITE_DIR sandbox (${jail}).`,
+  let absPath = resolvePath(jail, save)
+  if (escapesJail(jail, absPath)) {
+    // Re-anchor under the jail by dropping leading separators so the path is treated as
+    // jail-relative. `..` segments survive normalization, so genuine traversal is still caught.
+    const reanchored = save.replace(/^[/\\]+/, '')
+    absPath = resolvePath(jail, reanchored)
+    if (escapesJail(jail, absPath)) {
+      return {
+        ok: false,
+        code: 'E_FS_WRITE_ESCAPE',
+        message: `save path "${save}" escapes the configured MCP_FS_WRITE_DIR sandbox (${jail}) via parent-directory traversal.`,
+      }
     }
   }
   return { ok: true, absPath }

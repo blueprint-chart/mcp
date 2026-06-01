@@ -174,18 +174,20 @@ describe('render — save option (MCP_FS_WRITE_DIR sandbox)', () => {
     }
   })
 
-  it('rejects an absolute save outside the sandbox with E_FS_WRITE_ESCAPE', async () => {
+  it('remaps an absolute save outside the sandbox to a jail-relative path', async () => {
     const jail = makeJail()
     process.env.MCP_FS_WRITE_DIR = jail
     try {
-      // sibling of the jail — outside the sandbox
-      const outside = join(dirname(jail), 'escape.svg')
-      const r = await renderTool({ source: BAR, format: 'svg', save: outside })
-      expect(r.ok).toBe(false)
-      if (!r.ok) {
-        expect(r.errors[0]!.code).toBe('E_FS_WRITE_ESCAPE')
+      // an absolute path pointing outside the jail: the leading slash is stripped and
+      // the rest joined under the sandbox, so it lands inside rather than being rejected
+      const r = await renderTool({ source: BAR, format: 'svg', save: '/var/lib/escape.svg' })
+      expect(r.ok).toBe(true)
+      if (r.ok) {
+        expect(r.data.savedTo).toBe(join(jail, 'var/lib/escape.svg'))
+        expect(existsSync(join(jail, 'var/lib/escape.svg'))).toBe(true)
       }
-      expect(existsSync(outside)).toBe(false)
+      // the real out-of-jail location was never touched
+      expect(existsSync('/var/lib/escape.svg')).toBe(false)
     }
     finally {
       cleanup(jail)
@@ -202,6 +204,21 @@ describe('render — save option (MCP_FS_WRITE_DIR sandbox)', () => {
         expect(r.errors[0]!.code).toBe('E_FS_WRITE_ESCAPE')
       }
       expect(existsSync(join(dirname(jail), 'escape.svg'))).toBe(false)
+    }
+    finally {
+      cleanup(jail)
+    }
+  })
+
+  it('rejects an absolute path whose embedded ../ traversal still escapes', async () => {
+    const jail = makeJail()
+    process.env.MCP_FS_WRITE_DIR = jail
+    try {
+      const r = await renderTool({ source: BAR, format: 'svg', save: '/a/../../../../etc/passwd' })
+      expect(r.ok).toBe(false)
+      if (!r.ok) {
+        expect(r.errors[0]!.code).toBe('E_FS_WRITE_ESCAPE')
+      }
     }
     finally {
       cleanup(jail)
