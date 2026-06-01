@@ -57,7 +57,7 @@ claude mcp add blueprint-chart \
 | `validate_dsl` | Parse `.bpc`; returns `{ valid, errors[], warnings[] }` — each error has `code`, `message`, `suggestion` |
 | `inspect_dsl` | Parse and summarize: `chartType`, `scenes`, `seriesCount`, `rowCount`, `hasHighlights`, `hasColorizes`, etc. |
 | `recommend_chart_type` | Rank chart types for a given column shape and row count |
-| `render` | Render to SVG (default), PNG, or HTML; always returns structured frame metadata, with structured `errors[]` (each with `code` + `suggestion`) on failure. Pass `save: <path>` to write the output to disk (requires `MCP_ALLOW_FS_WRITE=1`) |
+| `render` | Render to SVG (default), PNG, or HTML; always returns structured frame metadata, with structured `errors[]` (each with `code` + `suggestion`) on failure. Pass `save: <path>` to write the output to disk (requires `MCP_FS_WRITE_DIR`; writes are confined to that directory) |
 | `list_chart_types` | List all renderable chart types (tool equivalent of `bpc://handbook/choosing`) |
 | `describe_chart_type` | Properties, when-to-use, when-NOT-to-use, and data-shape for one chart type (tool equivalent of `bpc://chart-types/{slug}`) |
 | `get_example` | Fetch a canonical `.bpc` sample by chart type or sample name (tool equivalent of `bpc://samples/{id}`) |
@@ -67,6 +67,16 @@ claude mcp add blueprint-chart \
 | `export_chart` | Validate a `.bpc` and return shareable editor URLs — an editable `copyUrl` and a read-only `embedUrl` for iframes (requires `BLUEPRINT_CHART_EDITOR_URL`) |
 
 The discovery tools (`list_chart_types`, `describe_chart_type`, `get_example`, `search_examples`, `get_grammar`, `list_palettes`) let clients without MCP resource support access the same reference material that the `bpc://` URIs expose.
+
+### Saving rendered output
+
+The `render` tool can write its output to disk via `save: <path>`. This is disabled by default. Set `MCP_FS_WRITE_DIR` to an absolute directory to enable it — all writes are confined to that directory (a sandbox). Relative `save` paths resolve under it; absolute `save` paths must resolve inside it; `../` traversal and paths pointing outside are rejected. Missing subdirectories are created automatically. Containment is checked lexically, so a symlink inside the directory that points elsewhere is **not** followed — avoid placing symlinks in the sandbox if that matters to you.
+
+```bash
+claude mcp add blueprint-chart \
+  -e MCP_FS_WRITE_DIR=/path/to/output \
+  -- npx -y @blueprint-chart/mcp
+```
 
 ## Resources
 
