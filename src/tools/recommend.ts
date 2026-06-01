@@ -25,6 +25,6 @@ export function recommendChartType(input: unknown): ToolResult<RecommendOutput> 
     )
   }
   const base = recommendCharts(parsed.data.columnTypes, parsed.data.rowCount)
-  const recommendations = applyGoalReranking(base, parsed.data.goal)
+  const recommendations = applyGoalReranking(base, parsed.data.goal, parsed.data.rowCount)
   return toolOk({ recommendations })
 }

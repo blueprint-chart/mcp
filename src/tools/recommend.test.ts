@@ -42,4 +42,39 @@ describe('recommend_chart_type', () => {
       expect(['pie', 'donut', 'bar-stacked', 'column-stacked']).toContain(r.data.recommendations[0]?.chartType)
     }
   })
+
+  it('keeps lib-best bar-multi ahead of a narrative-boosted line-multi', () => {
+    const r = recommendChartType({
+      columnTypes: ['string', 'number', 'number', 'number'],
+      rowCount: 6,
+      goal: 'software overtakes hardware as the top revenue driver',
+    })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      const types = r.data.recommendations.map(x => x.chartType)
+      const barMulti = types.indexOf('bar-multi')
+      const lineMulti = types.indexOf('line-multi')
+      expect(barMulti).toBeGreaterThanOrEqual(0)
+      expect(lineMulti).toBeGreaterThanOrEqual(0)
+      expect(barMulti).toBeLessThan(lineMulti)
+    }
+  })
+
+  it('threads rowCount so the pie tiebreak fires for a small-N part-to-whole goal', () => {
+    const r = recommendChartType({
+      columnTypes: ['string', 'number'],
+      rowCount: 5,
+      goal: 'Asia is nearly 60% of the world population; share of total across five regions',
+    })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      const types = r.data.recommendations.map(x => x.chartType)
+      const pieIdx = types.indexOf('pie')
+      const donutIdx = types.indexOf('donut')
+      // both should be present and boosted to the front; pie before donut at N=5
+      expect(pieIdx).toBeGreaterThanOrEqual(0)
+      expect(donutIdx).toBeGreaterThanOrEqual(0)
+      expect(pieIdx).toBeLessThan(donutIdx)
+    }
+  })
 })
