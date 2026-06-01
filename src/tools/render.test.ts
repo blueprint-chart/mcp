@@ -201,6 +201,7 @@ describe('render — save option (MCP_FS_WRITE_DIR sandbox)', () => {
       if (!r.ok) {
         expect(r.errors[0]!.code).toBe('E_FS_WRITE_ESCAPE')
       }
+      expect(existsSync(join(dirname(jail), 'escape.svg'))).toBe(false)
     }
     finally {
       cleanup(jail)
