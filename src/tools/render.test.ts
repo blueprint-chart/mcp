@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { mkdtempSync, rmSync, existsSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, dirname } from 'node:path'
 import { samples } from '@blueprint-chart/lib'
 import { renderTool } from './render'
 
@@ -83,65 +86,124 @@ describe('render — frame defaults', () => {
   })
 })
 
-describe('render — save option', () => {
-  it('errors when MCP_ALLOW_FS_WRITE is unset', async () => {
-    delete process.env.MCP_ALLOW_FS_WRITE
-    const r = await renderTool({
-      source: 'chart bar-vertical { data { "E" = 1 } }',
-      format: 'png',
-      save: '/tmp/test.png',
-    })
+describe('render — save option (MCP_FS_WRITE_DIR sandbox)', () => {
+  const BAR = 'chart bar-vertical { title = "x"  data { "E" = 1 } }'
+  const ORIGINAL = process.env.MCP_FS_WRITE_DIR
+
+  function makeJail(): string {
+    return mkdtempSync(join(tmpdir(), 'mcp-jail-'))
+  }
+
+  function cleanup(dir: string): void {
+    rmSync(dir, { recursive: true, force: true })
+  }
+
+  afterEach(() => {
+    if (ORIGINAL === undefined) {
+      delete process.env.MCP_FS_WRITE_DIR
+    }
+    else {
+      process.env.MCP_FS_WRITE_DIR = ORIGINAL
+    }
+  })
+
+  it('errors with E_FS_WRITE_DISABLED when MCP_FS_WRITE_DIR is unset', async () => {
+    delete process.env.MCP_FS_WRITE_DIR
+    const r = await renderTool({ source: BAR, format: 'svg', save: 'out.svg' })
     expect(r.ok).toBe(false)
     if (!r.ok) {
       expect(r.errors[0]!.code).toBe('E_FS_WRITE_DISABLED')
     }
   })
 
-  it('writes the PNG when MCP_ALLOW_FS_WRITE=1', async () => {
-    process.env.MCP_ALLOW_FS_WRITE = '1'
-    const { samples } = await import('@blueprint-chart/lib')
-    const sample = samples.find(s => s.id === 'letter-frequency')!
-    const tmp = `/tmp/mcp-render-test-${Date.now()}.png`
-    try {
-      const r = await renderTool({ source: sample.dsl, format: 'png', save: tmp })
-      expect(r.ok).toBe(true)
-      if (r.ok) {
-        expect(r.data.savedTo).toBe(tmp)
-        expect(r.data.png).toBeUndefined() // inline payload omitted
-        const { statSync } = await import('node:fs')
-        expect(statSync(tmp).size).toBeGreaterThan(1000) // real PNG, not stub
-      }
-    }
-    finally {
-      const { unlinkSync, existsSync } = await import('node:fs')
-      if (existsSync(tmp)) {
-        unlinkSync(tmp)
-      }
-      delete process.env.MCP_ALLOW_FS_WRITE
+  it('errors with E_FS_WRITE_DISABLED when MCP_FS_WRITE_DIR is whitespace', async () => {
+    process.env.MCP_FS_WRITE_DIR = '   '
+    const r = await renderTool({ source: BAR, format: 'svg', save: 'out.svg' })
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.errors[0]!.code).toBe('E_FS_WRITE_DISABLED')
     }
   })
 
-  it('writes the SVG when format=svg and save provided', async () => {
-    process.env.MCP_ALLOW_FS_WRITE = '1'
-    const tmp = `/tmp/mcp-render-test-${Date.now()}.svg`
+  it('writes a relative save under the sandbox root', async () => {
+    const jail = makeJail()
+    process.env.MCP_FS_WRITE_DIR = jail
     try {
-      const r = await renderTool({
-        source: 'chart bar-vertical { title = "x"  data { "E" = 1 } }',
-        format: 'svg',
-        save: tmp,
-      })
+      const r = await renderTool({ source: BAR, format: 'svg', save: 'out.svg' })
       expect(r.ok).toBe(true)
       if (r.ok) {
-        expect(r.data.savedTo).toBe(tmp)
+        expect(r.data.savedTo).toBe(join(jail, 'out.svg'))
         expect(r.data.svg).toBeUndefined()
+        expect(existsSync(join(jail, 'out.svg'))).toBe(true)
       }
     }
     finally {
-      const { unlinkSync, existsSync } = await import('node:fs')
-      if (existsSync(tmp)) {
-        unlinkSync(tmp)
+      cleanup(jail)
+    }
+  })
+
+  it('writes an absolute save that is inside the sandbox', async () => {
+    const jail = makeJail()
+    process.env.MCP_FS_WRITE_DIR = jail
+    try {
+      const target = join(jail, 'a.svg')
+      const r = await renderTool({ source: BAR, format: 'svg', save: target })
+      expect(r.ok).toBe(true)
+      if (r.ok) {
+        expect(r.data.savedTo).toBe(target)
       }
-      delete process.env.MCP_ALLOW_FS_WRITE
+    }
+    finally {
+      cleanup(jail)
+    }
+  })
+
+  it('auto-creates nested subdirectories under the sandbox', async () => {
+    const jail = makeJail()
+    process.env.MCP_FS_WRITE_DIR = jail
+    try {
+      const r = await renderTool({ source: BAR, format: 'svg', save: 'deep/nested/dir/a.svg' })
+      expect(r.ok).toBe(true)
+      if (r.ok) {
+        expect(r.data.savedTo).toBe(join(jail, 'deep/nested/dir/a.svg'))
+        expect(existsSync(join(jail, 'deep/nested/dir/a.svg'))).toBe(true)
+      }
+    }
+    finally {
+      cleanup(jail)
+    }
+  })
+
+  it('rejects an absolute save outside the sandbox with E_FS_WRITE_ESCAPE', async () => {
+    const jail = makeJail()
+    process.env.MCP_FS_WRITE_DIR = jail
+    try {
+      // sibling of the jail — outside the sandbox
+      const outside = join(dirname(jail), 'escape.svg')
+      const r = await renderTool({ source: BAR, format: 'svg', save: outside })
+      expect(r.ok).toBe(false)
+      if (!r.ok) {
+        expect(r.errors[0]!.code).toBe('E_FS_WRITE_ESCAPE')
+      }
+      expect(existsSync(outside)).toBe(false)
+    }
+    finally {
+      cleanup(jail)
+    }
+  })
+
+  it('rejects ../ traversal escaping the sandbox with E_FS_WRITE_ESCAPE', async () => {
+    const jail = makeJail()
+    process.env.MCP_FS_WRITE_DIR = jail
+    try {
+      const r = await renderTool({ source: BAR, format: 'svg', save: '../escape.svg' })
+      expect(r.ok).toBe(false)
+      if (!r.ok) {
+        expect(r.errors[0]!.code).toBe('E_FS_WRITE_ESCAPE')
+      }
+    }
+    finally {
+      cleanup(jail)
     }
   })
 })
