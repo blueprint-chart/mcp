@@ -70,7 +70,9 @@ The discovery tools (`list_chart_types`, `describe_chart_type`, `get_example`, `
 
 ### Saving rendered output
 
-The `render` tool can write its output to disk via `save: <path>`. This is disabled by default. Set `MCP_FS_WRITE_DIR` to an absolute directory to enable it — all writes are confined to that directory (a sandbox). Relative `save` paths resolve under it; absolute `save` paths must resolve inside it; `../` traversal and paths pointing outside are rejected. Missing subdirectories are created automatically. Containment is checked lexically, so a symlink inside the directory that points elsewhere is **not** followed — avoid placing symlinks in the sandbox if that matters to you.
+The `render` tool can write its output to disk via `save: <path>`. This is disabled by default. Set `MCP_FS_WRITE_DIR` to a directory to enable it — ideally an absolute path; a relative value is resolved from the server's working directory at startup. All writes are confined to that directory (a sandbox): relative `save` paths resolve under it, absolute `save` paths must resolve inside it, and `../` traversal or paths pointing outside are rejected. Missing subdirectories are created automatically. Containment is checked lexically (no `realpath`), so a symlink whose lexical path is inside the sandbox still passes the check and is then resolved by the OS at write time — if its target is outside the sandbox, the write reaches it. Avoid placing symlinks in the sandbox if isolation matters to you.
+
+Add the `-e` flag to your `claude mcp add` command:
 
 ```bash
 claude mcp add blueprint-chart \
