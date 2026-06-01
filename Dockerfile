@@ -33,7 +33,7 @@ COPY package.json pnpm-lock.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile --prod \
     && pnpm store prune
 
-# ----- Runtime: minimal image, non-root, healthcheck -----
+# ----- Runtime: minimal image, healthcheck -----
 FROM base AS runtime
 ENV NODE_ENV=production \
     MCP_HTTP=1 \
@@ -46,8 +46,9 @@ COPY bin /app/bin
 COPY public /app/public
 COPY package.json README.md LICENSE /app/
 
-# Drop privileges; `node` user ships in the official image
-USER node
+# Run as root: Railway mounts persistent volumes owned by root, and a non-root
+# user cannot write to them (MCP_FS_WRITE_DIR save target → EACCES on mkdir).
+# Root bypasses the ownership check, so the mounted volume is writable.
 
 # Container-level port (Railway maps its public 443 → this).
 # Railway sets $PORT at runtime; the CLI reads it. EXPOSE is documentation.
