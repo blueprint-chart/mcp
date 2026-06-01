@@ -19,6 +19,16 @@ describe('capabilityMatrix', () => {
     expect(statusOf(lookupCapability('donut', 'colorize'))).toBe('not-implemented')
   })
 
+  it('marks highlight inapplicable on single-series line/area, supported on multi-series (W1b)', () => {
+    expect(statusOf(lookupCapability('line', 'highlight'))).toBe('inapplicable')
+    expect(lookupCapability('line', 'highlight').note).toBeTruthy()
+    expect(statusOf(lookupCapability('area', 'highlight'))).toBe('inapplicable')
+    // multi-series variants got highlight dimming in W1b → default supported
+    expect(statusOf(lookupCapability('line-multi', 'highlight'))).toBe('supported')
+    expect(statusOf(lookupCapability('area-stacked', 'highlight'))).toBe('supported')
+    expect(statusOf(lookupCapability('donut', 'highlight'))).toBe('supported')
+  })
+
   it('does not flag any bundled sample property as inapplicable', () => {
     const offenders: string[] = []
     for (const s of samples) {
