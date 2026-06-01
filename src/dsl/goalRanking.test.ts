@@ -59,7 +59,17 @@ describe('applyGoalReranking', () => {
       { chartType: 'pie', label: 'Pie', fitness: 'alternative', reason: 'r' },
     ]
     const out = applyGoalReranking(r, 'China emits more than the US and India combined; ranked', 6)
-    expect(out[0]!.chartType).toBe('bar-vertical')
+    expect(out.map(x => x.chartType)).toEqual(['bar-vertical', 'bar-horizontal', 'donut', 'pie'])
+  })
+
+  it('promotes bar-split to #1 for a range / high-low goal (election-polls)', () => {
+    const r: ChartRecommendation[] = [
+      { chartType: 'bar-multi', label: 'Grouped Bar', fitness: 'best', reason: 'r' },
+      { chartType: 'bar-split', label: 'Split Bar', fitness: 'good', reason: 'r' },
+      { chartType: 'line-multi', label: 'Multi-Line', fitness: 'alternative', reason: 'r' },
+    ]
+    const out = applyGoalReranking(r, 'each party has a high and low estimate; a polling range', 6)
+    expect(out[0]!.chartType).toBe('bar-split')
   })
 
   it('does NOT apply the pie tiebreak for larger N', () => {
