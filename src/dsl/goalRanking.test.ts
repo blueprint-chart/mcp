@@ -28,4 +28,58 @@ describe('applyGoalReranking', () => {
     const out = applyGoalReranking(recs, 'just some unrelated text')
     expect(out.map(r => r.chartType)).toEqual(recs.map(r => r.chartType))
   })
+
+  it('keeps lib "best" bar-multi ahead of a narrative-boosted line-multi (quarterly-revenue)', () => {
+    const r: ChartRecommendation[] = [
+      { chartType: 'line-multi', label: 'Multi-Line', fitness: 'good', reason: 'r' },
+      { chartType: 'bar-multi', label: 'Grouped Bar', fitness: 'best', reason: 'r' },
+    ]
+    const out = applyGoalReranking(r, 'software overtakes hardware as the top revenue driver', 6)
+    expect(out[0]!.chartType).toBe('bar-multi')
+    expect(out[1]!.chartType).toBe('line-multi')
+  })
+
+  it('promotes pie ahead of donut for a part-to-whole goal at very small N (world-population)', () => {
+    const r: ChartRecommendation[] = [
+      { chartType: 'donut', label: 'Donut', fitness: 'good', reason: 'r' },
+      { chartType: 'pie', label: 'Pie', fitness: 'alternative', reason: 'r' },
+      { chartType: 'bar-vertical', label: 'Bar', fitness: 'best', reason: 'r' },
+      { chartType: 'bar-horizontal', label: 'HBar', fitness: 'good', reason: 'r' },
+    ]
+    const out = applyGoalReranking(r, 'Asia is nearly 60% of the world population; share of total', 5)
+    expect(out[0]!.chartType).toBe('pie')
+    expect(out.map(x => x.chartType)).toEqual(['pie', 'donut', 'bar-vertical', 'bar-horizontal'])
+  })
+
+  it('leaves lib "best" bar-vertical #1 for a ranked-comparison goal (co2-emissions)', () => {
+    const r: ChartRecommendation[] = [
+      { chartType: 'bar-vertical', label: 'Bar', fitness: 'best', reason: 'r' },
+      { chartType: 'bar-horizontal', label: 'HBar', fitness: 'good', reason: 'r' },
+      { chartType: 'donut', label: 'Donut', fitness: 'good', reason: 'r' },
+      { chartType: 'pie', label: 'Pie', fitness: 'alternative', reason: 'r' },
+    ]
+    const out = applyGoalReranking(r, 'China emits more than the US and India combined; ranked', 6)
+    expect(out[0]!.chartType).toBe('bar-vertical')
+  })
+
+  it('does NOT apply the pie tiebreak for larger N', () => {
+    const r: ChartRecommendation[] = [
+      { chartType: 'donut', label: 'Donut', fitness: 'good', reason: 'r' },
+      { chartType: 'pie', label: 'Pie', fitness: 'alternative', reason: 'r' },
+      { chartType: 'bar-vertical', label: 'Bar', fitness: 'best', reason: 'r' },
+    ]
+    const out = applyGoalReranking(r, 'share of total', 12)
+    const di = out.findIndex(x => x.chartType === 'donut')
+    const pi = out.findIndex(x => x.chartType === 'pie')
+    expect(di).toBeLessThan(pi)
+  })
+
+  it('returns input unchanged on no-match WITHOUT floating best ahead of a lib-higher good', () => {
+    const r: ChartRecommendation[] = [
+      { chartType: 'line-multi', label: 'Multi-Line', fitness: 'good', reason: 'r' },
+      { chartType: 'bar-multi', label: 'Grouped Bar', fitness: 'best', reason: 'r' },
+    ]
+    const out = applyGoalReranking(r, 'just some unrelated text', 6)
+    expect(out.map(x => x.chartType)).toEqual(['line-multi', 'bar-multi'])
+  })
 })
