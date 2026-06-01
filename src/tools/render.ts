@@ -53,6 +53,8 @@ function resolveSavePath(save: string): SaveResolution {
   }
   const absPath = resolvePath(jail, save)
   const rel = relativePath(jail, absPath)
+  // rel === '' means `save` resolves to the jail root itself (e.g. "" or "."), which is not a writable file path;
+  // group it with true escapes — all are rejected as out-of-sandbox.
   const escapes = rel === '' || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)
   if (escapes) {
     return {
