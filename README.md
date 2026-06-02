@@ -3,7 +3,7 @@
     <img src="https://raw.githubusercontent.com/blueprint-chart/blueprint-chart/main/packages/editor/src/assets/images/blueprint-chart-logo.svg" width="120" alt="blueprint-chart">
   </a>
 </p>
-<p align="center"><strong>Model Context Protocol server for authoring Blueprint Chart <code>.bpc</code> files with LLMs — the AI half of the open chart format AI writes and the browser renders. Grounded in real dataviz pedagogy with a tight parse + render feedback loop.</strong></p>
+<p align="center"><strong>Model Context Protocol server for authoring Blueprint Chart <code>.bpc</code> files with LLMs, grounded in real dataviz pedagogy with a tight parse + render feedback loop. An open, plain-text chart format an AI can write and any browser can render. No backend, no account, nothing uploaded.</strong></p>
 
 <div align="center">
 
