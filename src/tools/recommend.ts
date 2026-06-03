@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { recommendCharts, type ChartRecommendation } from '@blueprint-chart/lib'
-import { applyGoalReranking } from '../dsl/goalRanking'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 
 const ColumnTypeSchema = z.enum(['string', 'number', 'date'])
@@ -24,7 +23,10 @@ export function recommendChartType(input: unknown): ToolResult<RecommendOutput> 
       parsed.error.issues.map(i => ({ path: i.path.join('.'), message: i.message })),
     )
   }
-  const base = recommendCharts(parsed.data.columnTypes, parsed.data.rowCount)
-  const recommendations = applyGoalReranking(base, parsed.data.goal, parsed.data.rowCount)
+  const recommendations = recommendCharts(
+    parsed.data.columnTypes,
+    parsed.data.rowCount,
+    parsed.data.goal,
+  )
   return toolOk({ recommendations })
 }

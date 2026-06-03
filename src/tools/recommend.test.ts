@@ -35,11 +35,19 @@ describe('recommend_chart_type', () => {
     }
   })
 
-  it('reorders toward part-to-whole when a goal says "share of total"', () => {
+  it('recommends a part-to-whole chart when the goal says "share of total"', () => {
     const r = recommendChartType({ columnTypes: ['string', 'number'], rowCount: 5, goal: 'each region as a share of the total' })
     expect(r.ok).toBe(true)
     if (r.ok) {
-      expect(['pie', 'donut', 'bar-stacked', 'column-stacked']).toContain(r.data.recommendations[0]?.chartType)
+      expect(['pie', 'donut']).toContain(r.data.recommendations[0]?.chartType)
+    }
+  })
+
+  it('surfaces bar-split for a range goal (was impossible before)', () => {
+    const r = recommendChartType({ columnTypes: ['string', 'number'], rowCount: 6, goal: 'the lead with its margin of error' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.recommendations[0]?.chartType).toBe('bar-split')
     }
   })
 
