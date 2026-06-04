@@ -20,14 +20,14 @@ const RESTRAINT_NOTE
   = 'Restraint: add valueLabels/legend/sort/colorPalette/highlight only if the user asked or the finding demands it; always include source/byline metadata.'
 
 const GOAL_TIP
-  = 'Tip: pass the user\'s goal as \'goal\' — it determines the chart family (comparison/ranking/part-to-whole/composition-over-time/trend/range).'
+  = 'Tip: pass the user\'s goal verbatim as \'goal\' — do not paraphrase; it determines the chart family (comparison/ranking/part-to-whole/composition-over-time/trend/range).'
 
 function buildGuidance(recommendations: ChartRecommendation[], goal: string | undefined): string | undefined {
   const top = recommendations[0]
   if (!top) {
     return undefined
   }
-  const core = `Use '${top.chartType}' unless the user explicitly asked for a different type. Next: describe_chart_type({ name: '${top.chartType}' }). ${RESTRAINT_NOTE}`
+  const core = `Use '${top.chartType}' unless the user asked for a different type or your reading of the data clearly contradicts it (say why if you override). Next: describe_chart_type({ name: '${top.chartType}' }). ${RESTRAINT_NOTE}`
   if (goal === undefined || goal.trim() === '') {
     return `${GOAL_TIP} ${core}`
   }

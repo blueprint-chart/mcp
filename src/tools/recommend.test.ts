@@ -102,7 +102,7 @@ describe('recommend_chart_type', () => {
     const r = recommendChartType({ columnTypes: ['string', 'number'], rowCount: 6 })
     expect(r.ok).toBe(true)
     if (r.ok) {
-      expect(r.data.guidance).toMatch(/^Tip: pass the user's goal as 'goal'/)
+      expect(r.data.guidance).toMatch(/^Tip: pass the user's goal verbatim as 'goal'/)
       expect(r.data.guidance).toContain('composition-over-time')
     }
   })

@@ -1,7 +1,7 @@
 const BODY = `You are authoring a Blueprint Chart (\`.bpc\`) file for a user.
 
 Workflow:
-1. **Always start with \`recommend_chart_type({ columnTypes, rowCount, goal })\`.** Pass the user's goal/finding as a prose sentence — the goal decides the chart family (comparison / ranking / part-to-whole / composition-over-time / trend / range). Trust the top recommendation unless the user explicitly named a chart type.
+1. **Always start with \`recommend_chart_type({ columnTypes, rowCount, goal })\`.** Pass the user's goal/finding verbatim — do not paraphrase or summarize it. The goal decides the chart family (comparison / ranking / part-to-whole / composition-over-time / trend / range), and paraphrasing drops the words that decide it. Trust the top recommendation unless the user explicitly named a chart type or your own reading of the data clearly contradicts it — if you override, say why.
 2. Call \`describe_chart_type({ name: "<recommended type>" })\` for properties, when-to-use, and a data-shape example.
 3. Call \`get_example({ chartType: "<recommended type>" })\` (or \`{ name: "<sample-id>" }\`) to copy a canonical .bpc as a starting point.
 4. Write the \`.bpc\` source — minimal first: a title that states the finding, a description, the data, and metadata.

@@ -39,4 +39,10 @@ describe('authorChartPrompt', () => {
     expect(text).toMatch(/Metadata is not chrome/)
     expect(text).toMatch(/handbook\/design-principles/)
   })
+
+  it('demands the verbatim goal and permits a reasoned override', () => {
+    const text = authorChartPrompt().messages[0]!.content.text
+    expect(text).toMatch(/verbatim — do not paraphrase/)
+    expect(text).toMatch(/say why/)
+  })
 })
