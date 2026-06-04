@@ -39,7 +39,7 @@ const SAMPLES = [
   { id: 'letter-frequency', expectedType: 'bar-vertical' },
   { id: 'medal-count', expectedType: 'bar-multi' },
   { id: 'population-stacked-bar', expectedType: 'bar-stacked' },
-  { id: 'quarterly-revenue', expectedType: 'bar-multi' },
+  { id: 'quarterly-revenue', expectedType: 'line-multi' }, // re-cut 2026-06-04: crossover story reads as lines
   { id: 'quarterly-stacked-columns', expectedType: 'column-stacked' },
   { id: 'renewable-capacity', expectedType: 'bar-grouped' },
   { id: 'spoken-languages', expectedType: 'bar-horizontal' },

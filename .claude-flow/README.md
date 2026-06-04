@@ -199,6 +199,12 @@ After a run clears the variance probe and you accept it:
 
    Empty diff = in sync.
 
+5. **Flag sample re-cuts.** When a bundled reference itself is re-cut (type or story
+   changed), per-sample comparisons across the cut are invalid. Re-cuts so far:
+   - 2026-06-04: `quarterly-revenue` re-cut `bar-multi` → `line-multi` (its title is a
+     crossover claim; lines tell it — the lib `1cat+Nnum × trend` cell flipped with it);
+     `quarterly-stacked-columns` retitled to a composition story (type unchanged).
+
 > Why is this directory versioned at all? `.claude-flow/` is gitignored except
 > `*.workflow.js` and `README.md` (negations in `.gitignore`). The turn-1 harness
 > was lost to the ignore rule — those negations exist so the policy and the scripts
