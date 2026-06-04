@@ -1,5 +1,8 @@
 .claude
-.claude-flow
+.claude-flow/*
+# The acceptance harness IS versioned (the turn-1 harness was lost to this ignore — see .claude-flow/README.md)
+!.claude-flow/*.workflow.js
+!.claude-flow/README.md
 .mcp.json
 .swarm
 agentdb.rvf
