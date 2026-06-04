@@ -51,7 +51,7 @@ describe('recommend_chart_type', () => {
     }
   })
 
-  it('keeps lib-best bar-multi ahead of a narrative-boosted line-multi', () => {
+  it('puts line-multi first for a categorical crossover goal (2026-06-04 re-cut posture)', () => {
     const r = recommendChartType({
       columnTypes: ['string', 'number', 'number', 'number'],
       rowCount: 6,
@@ -60,11 +60,10 @@ describe('recommend_chart_type', () => {
     expect(r.ok).toBe(true)
     if (r.ok) {
       const types = r.data.recommendations.map(x => x.chartType)
-      const barMulti = types.indexOf('bar-multi')
       const lineMulti = types.indexOf('line-multi')
-      expect(barMulti).toBeGreaterThanOrEqual(0)
-      expect(lineMulti).toBeGreaterThanOrEqual(0)
-      expect(barMulti).toBeLessThan(lineMulti)
+      const barMulti = types.indexOf('bar-multi')
+      expect(lineMulti).toBe(0)
+      expect(barMulti).toBeGreaterThan(0)
     }
   })
 
