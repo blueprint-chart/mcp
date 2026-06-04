@@ -73,7 +73,7 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: args => inspectDsl(args as { source: string }),
   },
   recommend_chart_type: {
-    description: 'Given an array of column types and a row count, return ranked chart-type recommendations.',
+    description: 'Start here before writing any .bpc. Takes column types, row count, and the user\'s goal (a prose sentence — it determines the chart family: comparison/ranking/part-to-whole/composition-over-time/trend/range). Returns ranked chart-type recommendations plus guidance.',
     inputSchema: RecommendInputSchema,
     handler: args => recommendChartType(args),
   },
@@ -83,12 +83,12 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: args => renderTool(args),
   },
   list_chart_types: {
-    description: 'List every chart type the renderer supports, with aliases and one-line summaries. Call this before writing .bpc if unsure which type to use.',
+    description: 'Reference list of every chart type the renderer supports, with aliases and one-line summaries. To choose a type for a dataset, call recommend_chart_type instead.',
     inputSchema: ListChartTypesInputSchema,
     handler: () => listChartTypes(),
   },
   describe_chart_type: {
-    description: 'Return everything an LLM needs to write a .bpc for a given chart type. Input: { chartType: "bar-horizontal" } (or any canonical/alias name from list_chart_types). Returns summary, when-to-use, when-NOT-to-use, full property list with enum choices, data-shape example, and a pointer to a canonical sample.',
+    description: 'Return everything an LLM needs to write a .bpc for a given chart type — typically your second call, after recommend_chart_type. Input: { chartType: "bar-horizontal" } (or any canonical/alias name). Returns summary, when-to-use, when-NOT-to-use, full property list with enum choices, data-shape example, and a pointer to a canonical sample.',
     inputSchema: DescribeChartTypeInputSchema,
     handler: args => describeChartType(args),
   },
