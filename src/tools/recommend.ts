@@ -13,6 +13,25 @@ export type RecommendInput = z.infer<typeof RecommendInputSchema>
 
 export interface RecommendOutput {
   recommendations: ChartRecommendation[]
+  guidance?: string
+}
+
+const RESTRAINT_NOTE
+  = 'Restraint: add valueLabels/legend/sort/colorPalette/highlight only if the user asked or the finding demands it; always include source/byline metadata.'
+
+const GOAL_TIP
+  = 'Tip: pass the user\'s goal as \'goal\' — it determines the chart family (comparison/ranking/part-to-whole/composition-over-time/trend/range).'
+
+function buildGuidance(recommendations: ChartRecommendation[], goal: string | undefined): string | undefined {
+  const top = recommendations[0]
+  if (!top) {
+    return undefined
+  }
+  const core = `Use '${top.chartType}' unless the user explicitly asked for a different type. Next: describe_chart_type({ name: '${top.chartType}' }). ${RESTRAINT_NOTE}`
+  if (goal === undefined || goal.trim() === '') {
+    return `${GOAL_TIP} ${core}`
+  }
+  return core
 }
 
 export function recommendChartType(input: unknown): ToolResult<RecommendOutput> {
@@ -28,5 +47,6 @@ export function recommendChartType(input: unknown): ToolResult<RecommendOutput> 
     parsed.data.rowCount,
     parsed.data.goal,
   )
-  return toolOk({ recommendations })
+  const guidance = buildGuidance(recommendations, parsed.data.goal)
+  return toolOk(guidance === undefined ? { recommendations } : { recommendations, guidance })
 }

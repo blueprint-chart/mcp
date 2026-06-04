@@ -85,4 +85,34 @@ describe('recommend_chart_type', () => {
       expect(pieIdx).toBeLessThan(donutIdx)
     }
   })
+
+  it('returns guidance naming the top type and the describe_chart_type next step', () => {
+    const r = recommendChartType({ columnTypes: ['date', 'number', 'number'], rowCount: 24, goal: 'the energy mix composition over time' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      const top = r.data.recommendations[0]!.chartType
+      expect(r.data.guidance).toContain(`Use '${top}'`)
+      expect(r.data.guidance).toContain(`describe_chart_type({ name: '${top}' })`)
+      expect(r.data.guidance).toMatch(/Restraint:/)
+      expect(r.data.guidance).not.toMatch(/pass the user's goal/i)
+    }
+  })
+
+  it('leads the guidance with the pass-the-goal tip when no goal is given', () => {
+    const r = recommendChartType({ columnTypes: ['string', 'number'], rowCount: 6 })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.guidance).toMatch(/^Tip: pass the user's goal as 'goal'/)
+      expect(r.data.guidance).toContain('composition-over-time')
+    }
+  })
+
+  it('omits guidance when there are no recommendations', () => {
+    const r = recommendChartType({ columnTypes: [], rowCount: 0 })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.recommendations).toEqual([])
+      expect(r.data.guidance).toBeUndefined()
+    }
+  })
 })
