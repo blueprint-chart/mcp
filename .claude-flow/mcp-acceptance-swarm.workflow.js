@@ -5,7 +5,7 @@ export const meta = {
     { title: 'Brief', detail: 'extract leakage-safe briefs from the 17 sample .bpc files' },
     { title: 'Author', detail: '51 blind authoring conversations (sample x persona) via the hosted MCP' },
     { title: 'Judge', detail: 'grade each authored chart against the real reference .bpc' },
-    { title: 'Synthesis', detail: 'aggregate stats + delta vs baseline + markdown report' },
+    { title: 'Synthesis', detail: 'aggregate v2 stats + markdown report' },
   ],
 }
 
