@@ -57,8 +57,17 @@ const PERSONAS = [
 
 // Baselines live in test-results/ and the KB; cross-run deltas are computed by the caller.
 
-// Turn-3: the deployed author_chart prompt, surfaced to every persona the way real MCP clients do.
-const AUTHOR_CHART_PROMPT = (typeof args === 'object' && args && args.authorChartPrompt) ? args.authorChartPrompt : ''
+// The deployed author_chart prompt, surfaced to every persona the way real MCP clients do.
+// The sandbox may deliver args as a JSON string — parse defensively. A missing prompt is a
+// FATAL config error (a silent '' fallback would unknowingly test personas without the prompt).
+let ARGS = args
+if (typeof ARGS === 'string') {
+  try { ARGS = JSON.parse(ARGS) } catch { ARGS = null }
+}
+const AUTHOR_CHART_PROMPT = (ARGS && typeof ARGS.authorChartPrompt === 'string' && ARGS.authorChartPrompt.trim() !== '') ? ARGS.authorChartPrompt : null
+if (!AUTHOR_CHART_PROMPT) {
+  throw new Error('Pass args.authorChartPrompt = the deployed author_chart prompt BODY text (see .claude-flow/README.md). Refusing to run with an empty prompt — that would silently test personas without the guidance under test.')
+}
 
 const MCP_TOOLS_QUERY = 'select:mcp__claude_ai_Blueprint_Chart__get_grammar,mcp__claude_ai_Blueprint_Chart__get_example,mcp__claude_ai_Blueprint_Chart__describe_chart_type,mcp__claude_ai_Blueprint_Chart__list_chart_types,mcp__claude_ai_Blueprint_Chart__recommend_chart_type,mcp__claude_ai_Blueprint_Chart__search_examples,mcp__claude_ai_Blueprint_Chart__list_palettes,mcp__claude_ai_Blueprint_Chart__validate_dsl,mcp__claude_ai_Blueprint_Chart__render,mcp__claude_ai_Blueprint_Chart__inspect_dsl'
 

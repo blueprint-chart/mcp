@@ -70,7 +70,12 @@ Score these axes. Do NOT score chart-type match (that is computed elsewhere).
 Return ONLY the structured object.`
 }
 
-const charts = Array.isArray(args && args.charts) ? args.charts : null
+// The sandbox may deliver args as a JSON string — parse defensively.
+let ARGS = args
+if (typeof ARGS === 'string') {
+  try { ARGS = JSON.parse(ARGS) } catch { ARGS = null }
+}
+const charts = (ARGS && Array.isArray(ARGS.charts)) ? ARGS.charts : null
 if (!charts || charts.length === 0) {
   throw new Error('Pass args.charts = [{ id, persona, expectedType, chosenType, finalDsl }] (e.g. from test-results/turn3-authored.json)')
 }
