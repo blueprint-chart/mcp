@@ -18,4 +18,25 @@ describe('authorChartPrompt', () => {
     expect(text).toContain('export_chart')
     expect(text).toMatch(/copyUrl/)
   })
+
+  it('makes recommend_chart_type the first workflow step, before list_chart_types', () => {
+    const text = authorChartPrompt().messages[0]!.content.text
+    expect(text).toMatch(/Always start with .?recommend_chart_type/)
+    expect(text.indexOf('recommend_chart_type')).toBeLessThan(text.indexOf('list_chart_types'))
+  })
+
+  it('instructs passing the user goal and explains it decides the chart family', () => {
+    const text = authorChartPrompt().messages[0]!.content.text
+    expect(text).toMatch(/goal decides the chart family/i)
+    expect(text).toMatch(/comparison.*ranking.*part-to-whole.*composition-over-time.*trend.*range/i)
+  })
+
+  it('contains the Restraint section with the chrome list and the metadata exemption', () => {
+    const text = authorChartPrompt().messages[0]!.content.text
+    expect(text).toMatch(/Restraint/)
+    expect(text).toMatch(/Do NOT add .?valueLabels/)
+    expect(text).toMatch(/unless the user asked/i)
+    expect(text).toMatch(/Metadata is not chrome/)
+    expect(text).toMatch(/handbook\/design-principles/)
+  })
 })

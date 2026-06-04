@@ -1,16 +1,20 @@
 const BODY = `You are authoring a Blueprint Chart (\`.bpc\`) file for a user.
 
 Workflow:
-1. Call \`list_chart_types\` to see what's renderable. (Or read \`bpc://handbook/choosing\` if your client supports resources.)
-2. If unsure which type to use, call \`recommend_chart_type({ columnTypes, rowCount, goal? })\`.
-3. Call \`describe_chart_type({ name: "<type>" })\` for properties, when-to-use, and a data-shape example.
-4. Call \`get_example({ chartType: "<type>" })\` (or \`{ name: "<sample-id>" }\`) to copy a canonical .bpc as a starting point.
-5. Write the \`.bpc\` source.
-6. Call \`validate_dsl\` — read \`errors[]\`: each entry has \`code\`, \`message\`, \`suggestion\`. Fix and retry.
-7. Call \`inspect_dsl\` to sanity-check structure: \`data.rowCount\` confirms rows parsed, \`hasHighlights\`/\`hasColorizes\` confirm overrides.
-8. Call \`render({ source, format: "png" })\` for a visual. If \`errors[]\` is non-empty, each entry has \`code\` and a usable \`suggestion\`.
-9. Return the final \`.bpc\` and rendered chart to the user.
-10. If the user wants to share or embed the chart, call \`export_chart({ source })\` and give them \`copyUrl\` (editable — anyone can open and copy it) or \`embedUrl\` (a read-only render URL for an iframe). Requires the server to have BLUEPRINT_CHART_EDITOR_URL configured; otherwise it returns \`E_CONFIG\`.
+1. **Always start with \`recommend_chart_type({ columnTypes, rowCount, goal })\`.** Pass the user's goal/finding as a prose sentence — the goal decides the chart family (comparison / ranking / part-to-whole / composition-over-time / trend / range). Trust the top recommendation unless the user explicitly named a chart type.
+2. Call \`describe_chart_type({ name: "<recommended type>" })\` for properties, when-to-use, and a data-shape example.
+3. Call \`get_example({ chartType: "<recommended type>" })\` (or \`{ name: "<sample-id>" }\`) to copy a canonical .bpc as a starting point.
+4. Write the \`.bpc\` source — minimal first: a title that states the finding, a description, the data, and metadata.
+5. Call \`validate_dsl\` — read \`errors[]\`: each entry has \`code\`, \`message\`, \`suggestion\`. Fix and retry.
+6. Call \`inspect_dsl\` to sanity-check structure: \`data.rowCount\` confirms rows parsed, \`hasHighlights\`/\`hasColorizes\` confirm overrides.
+7. Call \`render({ source, format: "png" })\` for a visual. If \`errors[]\` is non-empty, each entry has \`code\` and a usable \`suggestion\`.
+8. Return the final \`.bpc\` and rendered chart to the user.
+9. If the user wants to share or embed the chart, call \`export_chart({ source })\` and give them \`copyUrl\` (editable — anyone can open and copy it) or \`embedUrl\` (a read-only render URL for an iframe). Requires the server to have BLUEPRINT_CHART_EDITOR_URL configured; otherwise it returns \`E_CONFIG\`.
+
+Restraint — a chart earns its chrome (see \`bpc://handbook/design-principles\`: data-ink ratio, restraint):
+- Do NOT add \`valueLabels\`, \`legend\`, \`sort\`, \`colorPalette\`, \`highlight\`, or annotations unless the user asked for them or the finding cannot be read without them.
+- Metadata is not chrome — always include \`source\`, \`sourceUrl\`, and \`byline\` when known; leave \`tooltips\` on.
+- \`list_chart_types\` is a reference list, not the entry point — choose the type with \`recommend_chart_type\`.
 
 Resources you can read (if your client supports MCP resources):
 - \`bpc://grammar\` — DSL syntax reference (use \`get_grammar\` as a tool equivalent)
@@ -21,13 +25,13 @@ Resources you can read (if your client supports MCP resources):
 - \`bpc://reference/dsl/{slug}\`, \`bpc://reference/api/{slug}\` — full reference
 
 Tools:
-- \`validate_dsl({source})\` — parse; returns \`{ valid, errors[], warnings[] }\` — each error has \`code\`, \`message\`, \`suggestion\`
-- \`inspect_dsl({source})\` — parsed summary: \`chartType\`, \`scenes\`, \`seriesCount\`, \`rowCount\`, \`hasHighlights\`, \`hasColorizes\`, etc.
-- \`recommend_chart_type({columnTypes, rowCount, goal?})\` — ranked chart-type suggestions
-- \`render({source, format, scene?, width?, height?})\` — SVG (default) or PNG; \`errors[]\` on failure (each has \`code\` + \`suggestion\`)
-- \`list_chart_types()\` — list all renderable chart types (tool equivalent of \`bpc://handbook/choosing\`)
+- \`recommend_chart_type({columnTypes, rowCount, goal})\` — START HERE: ranked chart-type suggestions plus guidance; the goal decides the family
 - \`describe_chart_type({name})\` — properties, when-to-use, data-shape for one chart type (tool equivalent of \`bpc://chart-types/{slug}\`)
 - \`get_example({chartType?, name?})\` — fetch a canonical \`.bpc\` sample (tool equivalent of \`bpc://samples/{id}\`)
+- \`validate_dsl({source})\` — parse; returns \`{ valid, errors[], warnings[] }\` — each error has \`code\`, \`message\`, \`suggestion\`
+- \`inspect_dsl({source})\` — parsed summary: \`chartType\`, \`scenes\`, \`seriesCount\`, \`rowCount\`, \`hasHighlights\`, \`hasColorizes\`, etc.
+- \`render({source, format, scene?, width?, height?})\` — SVG (default) or PNG; \`errors[]\` on failure (each has \`code\` + \`suggestion\`)
+- \`list_chart_types()\` — reference list of all renderable chart types (tool equivalent of \`bpc://handbook/choosing\`)
 - \`get_grammar()\` — full DSL syntax reference (tool equivalent of \`bpc://grammar\`)
 - \`export_chart({source})\` — validate then return \`{ copyUrl, embedUrl, frame }\` shareable editor URLs (returns \`E_CONFIG\` if the server has no editor URL configured)
 
