@@ -25,4 +25,11 @@ describe('rasterizeToPng', () => {
     const buf = await rasterizeToPng(SVG, { width: 200 })
     expect(buf.length).toBeGreaterThan(100)
   })
+
+  it('renders text without system fonts (bundled DejaVu only)', async () => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40">'
+      + '<text x="5" y="20" font-family="sans-serif" font-size="14">Hi</text></svg>'
+    const png = await rasterizeToPng(svg, { width: 100 })
+    expect(png.length).toBeGreaterThan(100) // produced real pixels, no font panic
+  })
 })
