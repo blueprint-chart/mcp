@@ -17,11 +17,11 @@ const DEFAULT_TTL_SECONDS = 3600
  * Returns undefined when disabled via MCP_RENDER_CACHE_MAX_BYTES=0.
  */
 export function createRenderCache(): RenderCache | undefined {
-  const maxSize = Number(process.env.MCP_RENDER_CACHE_MAX_BYTES ?? DEFAULT_MAX_BYTES)
+  const maxSize = Number(process.env.MCP_RENDER_CACHE_MAX_BYTES?.trim() || DEFAULT_MAX_BYTES)
   if (!Number.isFinite(maxSize) || maxSize <= 0) {
     return undefined
   }
-  const ttlSeconds = Number(process.env.MCP_RENDER_CACHE_TTL_SECONDS ?? DEFAULT_TTL_SECONDS)
+  const ttlSeconds = Number(process.env.MCP_RENDER_CACHE_TTL_SECONDS?.trim() || DEFAULT_TTL_SECONDS)
   return new LRUCache<string, RenderCacheEntry>({
     maxSize,
     // +64 approximates per-entry key/metadata overhead

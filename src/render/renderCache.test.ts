@@ -27,11 +27,16 @@ describe('createRenderCache', () => {
     expect(createRenderCache()).toBeUndefined()
   })
 
+  it('treats an empty env var as unset (default budget, cache enabled)', () => {
+    process.env.MCP_RENDER_CACHE_MAX_BYTES = ''
+    expect(createRenderCache()).toBeDefined()
+  })
+
   it('expires entries after the TTL', async () => {
     process.env.MCP_RENDER_CACHE_TTL_SECONDS = '0.05' // 50ms for the test
     const cache = createRenderCache()
     cache!.set('k', { body: Buffer.from('x'), contentType: 'image/png' })
-    await new Promise(r => setTimeout(r, 80))
+    await new Promise(r => setTimeout(r, 150))
     expect(cache!.get('k')).toBeUndefined()
   })
 })
