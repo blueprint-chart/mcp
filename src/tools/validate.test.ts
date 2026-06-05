@@ -52,3 +52,45 @@ describe('validate_dsl warnings', () => {
     }
   })
 })
+
+// lib 0.1.30's validateChart adds value-level checks the MCP's structural pass
+// does not cover. These must now surface through the MCP validate path.
+describe('validate_dsl — lib value-level checks', () => {
+  it('flags a non-boolean value (tooltips = yes) as invalid-boolean', () => {
+    const r = validateDsl({ source: 'chart bar-vertical {\n  tooltips = yes\n  data { "A" = 1 }\n}' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.valid).toBe(false)
+      expect(r.data.errors.some(e => e.code === 'invalid-boolean')).toBe(true)
+    }
+  })
+
+  it('flags an out-of-set choice (lineSymbolShape = "diamondd") as invalid-choice', () => {
+    const r = validateDsl({ source: 'chart line-multi {\n  lineSymbolShape = "diamondd"\n  data {\n    series = "X","Y"\n    "A" = 1,2\n  }\n}' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.valid).toBe(false)
+      const issue = r.data.errors.find(e => e.code === 'invalid-choice')
+      expect(issue).toBeDefined()
+      expect(issue!.suggestion).toBe('diamond')
+    }
+  })
+
+  it('flags an unknown transform type as unknown-transform', () => {
+    const r = validateDsl({ source: 'chart bar-vertical {\n  data { "A" = 1 }\n  transform bogus { }\n}' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.valid).toBe(false)
+      expect(r.data.errors.some(e => e.code === 'unknown-transform')).toBe(true)
+    }
+  })
+
+  it('flags an unknown range annotation property (fromX) as unknown-annotation-property', () => {
+    const r = validateDsl({ source: 'chart line {\n  data {\n    "A" = 1\n    "B" = 2\n  }\n  range { fromX = 1 }\n}' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.valid).toBe(false)
+      expect(r.data.errors.some(e => e.code === 'unknown-annotation-property')).toBe(true)
+    }
+  })
+})
