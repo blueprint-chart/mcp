@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@blueprint-chart/docs':
-        specifier: 0.1.20
-        version: 0.1.20
+        specifier: 0.1.30
+        version: 0.1.30
       '@blueprint-chart/lib':
-        specifier: ^0.1.29
-        version: 0.1.29(d3-selection@3.0.0)
+        specifier: ^0.1.30
+        version: 0.1.30(d3-selection@3.0.0)
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0
         version: 1.29.0(zod@3.25.76)
@@ -69,11 +69,11 @@ packages:
   '@asamuzakjp/css-color@3.2.0':
     resolution: {integrity: sha512-K1A6z8tS3XsmCMM86xoWdn7Fkdn9m6RSVtocUrJYIwZnFVkng/PvkEoWtOWmP+Scc6saYWHWZYbndEEXxl24jw==}
 
-  '@blueprint-chart/docs@0.1.20':
-    resolution: {integrity: sha512-IVGWEt/RbH0VDTUET13FrljjqO7JXO3YkTgDujfMyXAre69tZNuNbrcMtteAmzxeodc0GX6Gf3Vjyu5DxTYTnQ==}
+  '@blueprint-chart/docs@0.1.30':
+    resolution: {integrity: sha512-ziAglxFlo5eVblrnPabcgwCIa15XnkSrMUhaAyYa2JAnARIUh8Ga6oUoc30HQswBgn9qtagQvrKOpAit0QVpZg==}
 
-  '@blueprint-chart/lib@0.1.29':
-    resolution: {integrity: sha512-h9Gq8eY8GE2ApxuvF4GCbPXn7f2nnGgcxNwoj23JKDXQQkKy9di3HJ7dyHLH1Gpnr6VJCS/xQyqkl8AmUjo4lg==}
+  '@blueprint-chart/lib@0.1.30':
+    resolution: {integrity: sha512-ZANrQ6W0HActm4mpkfO4em9t3JkOkQhN7MkRioF2bo8XWbDjJV5xfdVaKw/HbcA3ZggT+rZ9o8D655x2+BcRIw==}
 
   '@csstools/color-helpers@5.1.0':
     resolution: {integrity: sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA==}
@@ -2049,9 +2049,9 @@ snapshots:
       '@csstools/css-tokenizer': 3.0.4
       lru-cache: 10.4.3
 
-  '@blueprint-chart/docs@0.1.20': {}
+  '@blueprint-chart/docs@0.1.30': {}
 
-  '@blueprint-chart/lib@0.1.29(d3-selection@3.0.0)':
+  '@blueprint-chart/lib@0.1.30(d3-selection@3.0.0)':
     dependencies:
       '@floating-ui/dom': 1.7.6
       chroma-js: 3.2.0
