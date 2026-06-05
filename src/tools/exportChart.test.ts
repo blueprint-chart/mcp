@@ -4,6 +4,9 @@ import { ErrorCode } from '../errors'
 
 const VALID = 'chart bar-vertical {\n  title = "Hi"\n  data {\n    "A" = 1\n  }\n}\n'
 
+// Multi-series chart with two scenes — exercises the scene-0 preview path.
+const MULTI_SCENE = 'chart area-stacked {\n  title = "Steps"\n  data {\n    _series = "A","B"\n    "2000" = 1,2\n    "2001" = 3,4\n  }\n  scene "S1" {\n    highlight "A"\n  }\n  scene "S2" {\n    highlight "B"\n  }\n}\n'
+
 afterEach(() => {
   delete process.env.BLUEPRINT_CHART_EDITOR_URL
   delete process.env.MCP_PUBLIC_URL
@@ -102,7 +105,28 @@ describe('export preview', () => {
       expect(result.data.png).toBeUndefined()
       expect(result.data.previewOmitted).toBe(true)
       expect(result.data.copyUrl).toBeDefined()
+      expect(result.data.modelVisible).toBeUndefined()
     }
     spy.mockRestore()
+  })
+
+  it('renders the scene-0 frame (not the base state) when the chart has scenes', async () => {
+    process.env.BLUEPRINT_CHART_EDITOR_URL = 'https://blueprintchart.com'
+    const result = await exportChart({ source: MULTI_SCENE })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      // Scene 0 rendered without an E_UNKNOWN_SCENE_INDEX degrade.
+      expect(result.data.png).toBeDefined()
+      expect(result.data.previewOmitted).toBeUndefined()
+    }
+    // The scene-0 preview must differ from the base-state render: a scene with a
+    // `highlight` dims the non-highlighted series, so the pixels differ.
+    const { renderChart } = await import('../render/renderChart')
+    const base = await renderChart(MULTI_SCENE, { format: 'png', width: 800, height: 500 })
+    expect(base.ok).toBe(true)
+    if (result.ok && base.ok) {
+      const baseB64 = (base.body as Buffer).toString('base64')
+      expect(result.data.png).not.toBe(baseB64)
+    }
   })
 })

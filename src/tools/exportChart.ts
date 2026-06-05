@@ -64,11 +64,13 @@ export async function exportChart(input: unknown): Promise<ToolResult<ExportChar
     }
   }
 
+  // Scene-0 frame when the chart has scenes; base state otherwise (an explicit
+  // index on a sceneless chart fails diagnose with E_UNKNOWN_SCENE_INDEX).
+  const previewScene = (validated.ast.scenes?.length ?? 0) > 0 ? 0 : undefined
+
   // Preview must never fail a valid export — degrade to URLs-only.
-  // scene is omitted (undefined) so the renderer uses the default scene; passing
-  // scene:0 would fail E_UNKNOWN_SCENE_INDEX on charts that have no scene blocks.
   try {
-    const preview = await renderChart(parsed.data.source, { format: 'png', width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT })
+    const preview = await renderChart(parsed.data.source, { format: 'png', scene: previewScene, width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT })
     if (preview.ok) {
       output.png = (preview.body as Buffer).toString('base64')
       output.modelVisible = parsed.data.modelVisible
