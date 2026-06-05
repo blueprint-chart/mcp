@@ -164,13 +164,13 @@ curl "https://mcp.blueprintchart.com/render.png?bpc64=${BPC64}&width=800&height=
      alt="Blueprint Chart" width="800" height="400">
 ```
 
-Responses carry `Cache-Control: public, max-age=31536000, immutable` and version-aware ETags (both the `@blueprint-chart/lib` version and content hash contribute to the ETag). A `304 Not Modified` is returned when the client's `If-None-Match` matches. This means a CDN (e.g. Cloudflare) placed in front is a zero-code DNS change — set `MCP_TRUST_PROXY=1` behind one, and revisit the per-IP rate-limit key (see `TODOS.md`).
+Responses carry `Cache-Control: public, max-age=31536000, immutable` and version-aware ETags. The ETag is a sha256 over the MCP server's package version (`@blueprint-chart/mcp`) plus the request path and query, so every MCP release naturally busts cached ETags — including releases that only bump the bundled chart lib. A `304 Not Modified` is returned when the client's `If-None-Match` matches. This means a CDN (e.g. Cloudflare) placed in front is a zero-code DNS change — set `MCP_TRUST_PROXY=1` behind one, and revisit the per-IP rate-limit key (see `TODOS.md`).
 
 **Rate limiting:** render endpoints use a separate `MCP_RENDER_RATE_LIMIT_PER_MINUTE` limit (default `30`; `0` disables). Requests over the limit receive `429 Too Many Requests`.
 
 **Request-body size:** `bpc64` values encoding more than 8 KB of source are rejected with `413 Content Too Large`.
 
-**Caching:** rendered outputs are cached in an LRU memory cache keyed on the full URL. Tune with `MCP_RENDER_CACHE_MAX_BYTES` (default 50 MB; `0` disables) and `MCP_RENDER_CACHE_TTL_SECONDS` (default 3600; `0` disables TTL expiry). Empty values for either variable fall back to the default.
+**Caching:** rendered outputs are cached in an LRU memory cache keyed on the full URL. Tune with `MCP_RENDER_CACHE_MAX_BYTES` (default 50 MB; `0` disables) and `MCP_RENDER_CACHE_TTL_SECONDS` (default 3600; `0` or empty falls back to the default — only `MCP_RENDER_CACHE_MAX_BYTES=0` disables caching). Empty values for either variable fall back to the default.
 
 > **Deployment rule:** never set `MCP_PUBLIC_URL` on a deployment whose build predates the render endpoints — tool responses would advertise `urls` that 404.
 
