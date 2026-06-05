@@ -1,15 +1,17 @@
+import type { Annotations } from '@modelcontextprotocol/sdk/types.js'
 import type { ToolResult } from './errors'
 
 export interface TextContent {
   type: 'text'
   text: string
+  annotations?: Annotations
 }
 
 export interface ImageContent {
   type: 'image'
   data: string
   mimeType: string
-  annotations?: { audience: Array<'user' | 'assistant'> }
+  annotations?: Annotations
 }
 
 export interface FormattedToolResult {

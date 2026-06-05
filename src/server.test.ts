@@ -4,7 +4,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { samples } from '@blueprint-chart/lib'
 import { createServer, TOOLS } from './server'
 import { formatToolResult } from './toolContent'
-import { toolOk } from './errors'
+import { ErrorCode, toolError, toolOk } from './errors'
 
 async function connectInMemory() {
   const server = createServer()
@@ -198,7 +198,13 @@ describe('per-tool formatter dispatch', () => {
     expect(r.content[0]).toMatchObject({ type: 'text' })
   })
 
-  it('every TOOLS entry without a format override uses the default text path (via client)', async () => {
+  it('formatToolResult marks errors and serializes code+errors', () => {
+    const r = formatToolResult(toolError(ErrorCode.E_INPUT, [{ message: 'bad' }]))
+    expect(r.isError).toBe(true)
+    expect((r.content[0] as { text: string }).text).toContain('E_INPUT')
+  })
+
+  it('list_chart_types (no format override) returns all text blocks', async () => {
     const { client } = await connectInMemory()
     const res = await client.callTool({ name: 'list_chart_types', arguments: {} })
     const content = res.content as Array<{ type: string }>
