@@ -27,8 +27,10 @@ export type RenderChartResult =
   | { ok: true, body: string | Buffer, contentType: 'image/svg+xml' | 'image/png' | 'text/html', frame: FrameMetadata }
   | { ok: false, error: Extract<ToolResult<never>, { ok: false }> }
 
+/** Floors, lower-bounds at 1, upper-bounds at MAX_RENDER_DIMENSION; NaN falls back to the lower bound. */
 export function clampDimension(value: number): number {
-  return Math.min(Math.max(1, Math.floor(value)), MAX_RENDER_DIMENSION)
+  const n = Number.isNaN(value) ? 1 : value
+  return Math.min(Math.max(1, Math.floor(n)), MAX_RENDER_DIMENSION)
 }
 
 /** Moved verbatim from tools/render.ts — resvg requires the namespace. */

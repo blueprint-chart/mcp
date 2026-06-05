@@ -14,6 +14,8 @@ describe('clampDimension', () => {
     expect(clampDimension(0)).toBe(1)
     expect(clampDimension(800.9)).toBe(800)
     expect(clampDimension(5000)).toBe(MAX_RENDER_DIMENSION)
+    expect(clampDimension(Number.NaN)).toBe(1)
+    expect(clampDimension(Number.POSITIVE_INFINITY)).toBe(MAX_RENDER_DIMENSION)
   })
 })
 
@@ -36,6 +38,7 @@ describe('renderChart', () => {
       expect(pngSize(r.body as Buffer).width).toBe(400 * RASTER_SCALE)
     }
     const capped = await renderChart(VALID, { format: 'png', width: 1200, height: 750 })
+    expect(capped.ok).toBe(true)
     if (capped.ok) {
       expect(pngSize(capped.body as Buffer).width).toBe(MAX_RENDER_DIMENSION) // 2×1200 capped
     }
