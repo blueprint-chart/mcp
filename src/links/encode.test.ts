@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { samples } from '@blueprint-chart/lib'
-import { toUrlSafeB64, toStandardB64 } from './encode'
+import { toUrlSafeB64, toStandardB64, fromUrlSafeB64 } from './encode'
 
 /** Decode a url-safe, unpadded base64 string back to UTF-8 (mirrors the editor's /copy decoder). */
 function decodeUrlSafe(raw: string): string {
@@ -27,6 +27,23 @@ describe('toUrlSafeB64', () => {
 describe('toStandardB64', () => {
   it('encodes with standard alphabet and padding (atob-compatible)', () => {
     expect(toStandardB64('chart bar-vertical {\n}\n')).toBe('Y2hhcnQgYmFyLXZlcnRpY2FsIHsKfQo=')
+  })
+})
+
+describe('fromUrlSafeB64', () => {
+  it('round-trips toUrlSafeB64', () => {
+    const src = 'chart bar-vertical {\n  title = "Hé ✓"\n}\n'
+    expect(fromUrlSafeB64(toUrlSafeB64(src))).toBe(src)
+  })
+
+  it('decodes despite stripped padding', () => {
+    expect(fromUrlSafeB64(toUrlSafeB64('a'))).toBe('a') // 1 byte → 2 padding chars stripped
+    expect(fromUrlSafeB64(toUrlSafeB64('ab'))).toBe('ab') // 2 bytes → 1 padding char stripped
+  })
+
+  it('throws on characters outside the url-safe alphabet', () => {
+    expect(() => fromUrlSafeB64('abc$def')).toThrow(/url-safe base64/)
+    expect(() => fromUrlSafeB64('abc+def')).toThrow(/url-safe base64/) // standard b64 is NOT accepted
   })
 })
 
