@@ -108,12 +108,15 @@ describe('export preview', () => {
 
   it('renders the scene-0 frame (not the base state) when the chart has scenes', async () => {
     process.env.BLUEPRINT_CHART_EDITOR_URL = 'https://blueprintchart.com'
+    process.env.MCP_PUBLIC_URL = 'https://mcp.example.com'
     const result = await exportChart({ source: MULTI_SCENE })
     expect(result.ok).toBe(true)
     if (result.ok) {
       // Scene 0 rendered without an E_UNKNOWN_SCENE_INDEX degrade.
       expect(result.data.png).toBeDefined()
       expect(result.data.previewOmitted).toBeUndefined()
+      // Advertised URL must reproduce the same scene-0 preview.
+      expect(result.data.urls?.png).toContain('scene=0')
     }
     // The scene-0 preview must differ from the base-state render: a scene with a
     // `highlight` dims the non-highlighted series, so the pixels differ.

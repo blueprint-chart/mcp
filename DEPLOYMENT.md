@@ -145,7 +145,7 @@ Three stateless GET routes turn a `.bpc` source into a rendered image or the cha
 **Query parameters:**
 
 - `bpc64` *(required)* — URL-safe base64 of the `.bpc` source (base64url, no padding required).
-- `scene` — zero-based scene index. Defaults to `0`.
+- `scene` — zero-based scene index. Optional; when omitted the chart's base state is rendered.
 - `width` / `height` — output dimensions in pixels, capped at `1600` each.
 
 **curl example:**

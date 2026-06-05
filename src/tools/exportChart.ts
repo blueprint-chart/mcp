@@ -56,17 +56,17 @@ export async function exportChart(input: unknown): Promise<ToolResult<ExportChar
     frame: extractFrameMetadata(validated.ast),
   }
 
+  // Scene-0 frame when the chart has scenes; base state otherwise (an explicit
+  // index on a sceneless chart fails diagnose with E_UNKNOWN_SCENE_INDEX).
+  const previewScene = (validated.ast.scenes?.length ?? 0) > 0 ? 0 : undefined
+
   const publicBase = getPublicBaseUrl()
   if (publicBase) {
-    const urls = buildRenderUrls(parsed.data.source, { width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT }, publicBase)
+    const urls = buildRenderUrls(parsed.data.source, { width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT, scene: previewScene }, publicBase)
     if (urls) {
       output.urls = urls
     }
   }
-
-  // Scene-0 frame when the chart has scenes; base state otherwise (an explicit
-  // index on a sceneless chart fails diagnose with E_UNKNOWN_SCENE_INDEX).
-  const previewScene = (validated.ast.scenes?.length ?? 0) > 0 ? 0 : undefined
 
   // Preview must never fail a valid export — degrade to URLs-only.
   // TODO: renderChart re-runs validatePipeline internally; a renderChartFromAst overload could skip the re-parse (~ms today, fine at preview scale).
