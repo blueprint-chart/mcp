@@ -14,19 +14,8 @@ const LIB_CODES_COVERED_BY_MCP = new Set<string>([
   'missing-data', //       ↔ E_EMPTY_DATA
 ])
 
-// lib 0.1.30's published samples (bitcoin-price, unemployment-rates) still ship
-// a `dy` annotation key, and this server serves them as canonical examples via
-// get_example. The flag is a TRUE positive (`dy` is dropped by convertAnnotations;
-// the modern key is `textOffsetY`), but surfacing it would teach that our own
-// examples are broken. Samples are fixed upstream on lib main; REMOVE this
-// suppression when bumping past 0.1.30. Everything else under
-// `unknown-annotation-property` (e.g. a range's `fromX`) still surfaces.
-function isKnownHonoredAnnotationProp(issue: LibValidationIssue): boolean {
-  return issue.code === 'unknown-annotation-property' && issue.path.endsWith('.dy')
-}
-
 function keepLibIssue(issue: LibValidationIssue): boolean {
-  return !LIB_CODES_COVERED_BY_MCP.has(issue.code) && !isKnownHonoredAnnotationProp(issue)
+  return !LIB_CODES_COVERED_BY_MCP.has(issue.code)
 }
 
 // Map a lib ValidationIssue (code/path/message/suggestion) into the MCP's
