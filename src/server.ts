@@ -25,11 +25,14 @@ import { listResources, readResource } from './resources/index'
 import { authorChartPrompt } from './prompts/authorChart'
 import { zodToJsonSchema } from './lib/zodToJsonSchema'
 import type { ToolResult } from './errors'
+import { formatToolResult, type FormattedToolResult } from './toolContent'
 
 interface ToolDef {
   description: string
   inputSchema: Parameters<typeof zodToJsonSchema>[0]
   handler: (args: unknown) => ToolResult<unknown> | Promise<ToolResult<unknown>>
+  /** Optional content-block formatter. Defaults to formatToolResult (single text block). */
+  format?: (result: ToolResult<unknown>) => FormattedToolResult
 }
 
 // Server metadata is embedded into every `initialize` response's `serverInfo`.
@@ -119,22 +122,6 @@ export const TOOLS: Record<string, ToolDef> = {
   },
 }
 
-interface FormattedToolResult {
-  content: Array<{ type: 'text', text: string }>
-  isError?: boolean
-  [k: string]: unknown
-}
-
-function formatToolResult<T>(result: ToolResult<T>): FormattedToolResult {
-  if (result.ok) {
-    return { content: [{ type: 'text', text: JSON.stringify(result.data, null, 2) }] }
-  }
-  return {
-    isError: true,
-    content: [{ type: 'text', text: JSON.stringify({ code: result.code, errors: result.errors }, null, 2) }],
-  }
-}
-
 export function createServer(): Server {
   const icons = buildServerIcons()
   const server = new Server(
@@ -166,7 +153,7 @@ export function createServer(): Server {
       }
     }
     const result = await tool.handler(req.params.arguments ?? {})
-    return formatToolResult(result)
+    return (tool.format ?? formatToolResult)(result)
   })
 
   server.setRequestHandler(ListResourcesRequestSchema, async () => ({

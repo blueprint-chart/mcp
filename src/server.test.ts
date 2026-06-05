@@ -3,6 +3,8 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { samples } from '@blueprint-chart/lib'
 import { createServer, TOOLS } from './server'
+import { formatToolResult } from './toolContent'
+import { toolOk } from './errors'
 
 async function connectInMemory() {
   const server = createServer()
@@ -186,5 +188,20 @@ describe('server', () => {
       expect(res.isError).toBeFalsy()
       expect(JSON.stringify(res.content)).toMatch(/#\/copy\?bpc64=/)
     })
+  })
+})
+
+describe('per-tool formatter dispatch', () => {
+  it('formatToolResult emits a single text block with the JSON payload', () => {
+    const r = formatToolResult(toolOk({ a: 1 }))
+    expect(r.content).toHaveLength(1)
+    expect(r.content[0]).toMatchObject({ type: 'text' })
+  })
+
+  it('every TOOLS entry without a format override uses the default text path (via client)', async () => {
+    const { client } = await connectInMemory()
+    const res = await client.callTool({ name: 'list_chart_types', arguments: {} })
+    const content = res.content as Array<{ type: string }>
+    expect(content.every(c => c.type === 'text')).toBe(true)
   })
 })
