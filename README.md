@@ -57,14 +57,14 @@ claude mcp add blueprint-chart \
 | `validate_dsl` | Parse `.bpc`; returns `{ valid, errors[], warnings[] }` — each error has `code`, `message`, `suggestion` |
 | `inspect_dsl` | Parse and summarize: `chartType`, `scenes`, `seriesCount`, `rowCount`, `hasHighlights`, `hasColorizes`, etc. |
 | `recommend_chart_type` | Rank chart types for a given column shape and row count |
-| `render` | Render to SVG (default), PNG, or HTML; always returns structured frame metadata, with structured `errors[]` (each with `code` + `suggestion`) on failure. Pass `save: <path>` to write the output to disk (requires `MCP_FS_WRITE_DIR`; writes are confined to that directory) |
+| `render` | Render to SVG (default), PNG, or HTML; with `format:"png"` returns an inline image both you and the user can see. Always returns structured frame metadata. When `MCP_PUBLIC_URL` is set, includes `urls` (`{png,svg,bpc}`) — stateless links where the chart data travels inside the URL. Set `modelVisible:false` to show the image to the user without spending model image tokens. Pass `save:<path>` to write the output to disk (requires `MCP_FS_WRITE_DIR`; writes are confined to that directory). Width/height capped at 1600; PNG is 2× retina. |
 | `list_chart_types` | List all renderable chart types (tool equivalent of `bpc://handbook/choosing`) |
 | `describe_chart_type` | Properties, when-to-use, when-NOT-to-use, and data-shape for one chart type (tool equivalent of `bpc://chart-types/{slug}`) |
 | `get_example` | Fetch a canonical `.bpc` sample by chart type or sample name (tool equivalent of `bpc://samples/{id}`) |
 | `search_examples` | Find canonical examples by topic keywords and/or chart type (returns pointers; fetch full DSL with `get_example`) |
 | `get_grammar` | Full DSL syntax reference (tool equivalent of `bpc://grammar`) |
 | `list_palettes` | List named colour palettes with hex colours for `colorPalette` |
-| `export_chart` | Validate a `.bpc` and return shareable editor URLs — an editable `copyUrl` and a read-only `embedUrl` for iframes (requires `BLUEPRINT_CHART_EDITOR_URL`) |
+| `export_chart` | Validate a `.bpc` and return shareable URLs plus an inline scene-0 preview. Returns `{ copyUrl, embedUrl, urls?, frame }` — `copyUrl` is editable in the editor, `embedUrl` is a read-only iframe target, `urls.{png,svg,bpc}` are stateless rendered/source links (when `MCP_PUBLIC_URL` is set). Set `modelVisible:false` to show the preview to the user only. Requires `BLUEPRINT_CHART_EDITOR_URL`; preview failures never block the export. |
 
 The discovery tools (`list_chart_types`, `describe_chart_type`, `get_example`, `search_examples`, `get_grammar`, `list_palettes`) let clients without MCP resource support access the same reference material that the `bpc://` URIs expose.
 
@@ -242,12 +242,31 @@ Response:
   "data": {
     "svg": "<svg ...>...</svg>",
     "png": "<base64-encoded image>",
-    "mimeType": "image/png"
+    "mimeType": "image/png",
+    "urls": {
+      "png": "https://mcp.blueprintchart.com/render.png?bpc64=…",
+      "svg": "https://mcp.blueprintchart.com/render.svg?bpc64=…",
+      "bpc": "https://mcp.blueprintchart.com/render.bpc?bpc64=…"
+    }
   }
 }
 ```
 
+The `urls` field is only present when `MCP_PUBLIC_URL` is configured. Set `modelVisible:false` in the request to display the inline image to the user without spending your own image tokens.
+
 If rasterization fails (rare), `errors[]` is non-empty — each entry has a `code` (`"E_RENDER"`) and a `suggestion` — **and the response still includes** the SVG that was successfully produced, so partial success is preserved.
+
+#### Hosted render URLs
+
+When `MCP_PUBLIC_URL` is set, every `render` and `export_chart` response includes a `urls` field with stateless links. The chart data travels inside the URL (as `bpc64`, a URL-safe base64 encoding of the `.bpc` source) — no session, no server state required.
+
+Embed a chart directly in a page:
+
+```html
+<img src="https://<your-mcp-host>/render.png?bpc64=…" alt="My chart" width="800" height="500">
+```
+
+`/render.bpc` serves the raw `.bpc` source — it's "view source" for any chart URL, handy for sharing or reproducing a chart from its link alone.
 
 ### Reading a resource
 

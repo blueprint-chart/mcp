@@ -113,6 +113,9 @@ To test the auth gate locally, add `-e MCP_AUTH_TOKEN=test-token` to `docker run
 | `MCP_PUBLIC_URL` | *(unset)* | Public base URL (no path, no trailing slash). When set, advertised in `serverInfo.icons` so MCP clients can render the favicon. Required for icons to show in claude.ai / ChatGPT. |
 | `BLUEPRINT_CHART_EDITOR_URL` | *(unset)* | Editor app base URL (no trailing slash). When set, the `export_chart` tool mints shareable copy/embed links pointing at this base. Unset disables export (`export_chart` returns `E_CONFIG`). Recommended: `https://blueprintchart.com`. |
 | `BLUEPRINT_CHART_DOCS_URL` | *(unset)* | Docs site base URL. When set, tools and resource listings include a public `docsUrl` field so clients can link out to reference pages. Unset omits the field. Recommended: `https://docs.blueprintchart.com`. |
+| `MCP_RENDER_RATE_LIMIT_PER_MINUTE` | `30` | Per-IP rate limit for the render endpoints (`/render.png`, `/render.svg`, `/render.bpc`). `0` disables. Empty = default. |
+| `MCP_RENDER_CACHE_MAX_BYTES` | `52428800` | Maximum in-memory cache size for rendered outputs (50 MB). `0` disables the cache. Empty = default. |
+| `MCP_RENDER_CACHE_TTL_SECONDS` | `3600` | TTL for cached render results in seconds (1 hour). Empty = default. |
 
 ### Endpoints
 
@@ -125,6 +128,51 @@ To test the auth gate locally, add `-e MCP_AUTH_TOKEN=test-token` to `docker run
 | `/` | DELETE | Streamable HTTP session teardown (requires `Mcp-Session-Id`). |
 | `/` | OPTIONS | CORS preflight. |
 | `/favicon.ico`, `/favicon.png`, `/favicon.svg`, `/apple-touch-icon.png` | GET | Brand assets from `public/`. Always public, even when `MCP_AUTH_TOKEN` is set. |
+| `/render.png` | GET | Render a `.bpc` source to PNG. See [Render endpoints](#render-endpoints). |
+| `/render.svg` | GET | Render a `.bpc` source to SVG. See [Render endpoints](#render-endpoints). |
+| `/render.bpc` | GET | Return the raw `.bpc` source ("view source" for any chart URL). See [Render endpoints](#render-endpoints). |
+
+### Render endpoints
+
+Three stateless GET routes turn a `.bpc` source into a rendered image or the chart source itself. The chart data travels inside the URL — no session, no server state.
+
+| Route | Query params | Description |
+| --- | --- | --- |
+| `/render.png` | `bpc64`, `scene`, `width`, `height` | Rasterize to PNG at 2× (retina). |
+| `/render.svg` | `bpc64`, `scene`, `width`, `height` | Return the SVG render. |
+| `/render.bpc` | `bpc64` | Decode and return the raw `.bpc` source (`text/plain`). |
+
+**Query parameters:**
+
+- `bpc64` *(required)* — URL-safe base64 of the `.bpc` source (base64url, no padding required).
+- `scene` — zero-based scene index. Defaults to `0`.
+- `width` / `height` — output dimensions in pixels, capped at `1600` each.
+
+**curl example:**
+
+```bash
+BPC64=$(printf 'chart bar-vertical { title = "Test"\n data { "A" = 1 } }' \
+  | base64 -w0 | tr '+/' '-_' | tr -d '=')
+curl "https://mcp.blueprintchart.com/render.png?bpc64=${BPC64}&width=800&height=500" \
+  --output chart.png
+```
+
+**Embed as an `<img>` tag:**
+
+```html
+<img src="https://mcp.blueprintchart.com/render.png?bpc64=<bpc64value>&width=800&height=400"
+     alt="Blueprint Chart" width="800" height="400">
+```
+
+Responses carry `Cache-Control: public, max-age=31536000, immutable` and version-aware ETags (both the `@blueprint-chart/lib` version and content hash contribute to the ETag). A `304 Not Modified` is returned when the client's `If-None-Match` matches. This means a CDN (e.g. Cloudflare) placed in front is a zero-code DNS change — set `MCP_TRUST_PROXY=1` behind one, and revisit the per-IP rate-limit key (see `TODOS.md`).
+
+**Rate limiting:** render endpoints use a separate `MCP_RENDER_RATE_LIMIT_PER_MINUTE` limit (default `30`; `0` disables). Requests over the limit receive `429 Too Many Requests`.
+
+**Request-body size:** `bpc64` values encoding more than 8 KB of source are rejected with `413 Content Too Large`.
+
+**Caching:** rendered outputs are cached in an LRU memory cache keyed on the full URL. Tune with `MCP_RENDER_CACHE_MAX_BYTES` (default 50 MB; `0` disables) and `MCP_RENDER_CACHE_TTL_SECONDS` (default 3600; `0` disables TTL expiry). Empty values for either variable fall back to the default.
+
+> **Deployment rule:** never set `MCP_PUBLIC_URL` on a deployment whose build predates the render endpoints — tool responses would advertise `urls` that 404.
 
 ### Logs
 

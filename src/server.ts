@@ -82,7 +82,7 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: args => recommendChartType(args),
   },
   render: {
-    description: 'Render a .bpc source to SVG (default), PNG, or HTML. Always returns structured frame metadata (title, description, byline, source, sourceUrl, note). Pass `save: <path>` to write the primary output to disk and omit it from the response — useful when the LLM client cannot display binary payloads inline. Saving requires MCP_FS_WRITE_DIR to be set; the output always lands inside that directory — relative paths are joined to it and absolute paths are re-anchored under it (e.g. `/tmp/x.png` becomes `<dir>/tmp/x.png`), so any path you pass stays in the sandbox; only `../` traversal that escapes it is rejected.',
+    description: 'Render a .bpc source to SVG (default), PNG, or HTML. With format:"png" the chart comes back as an inline IMAGE you and the user can both see — render, look at the result, fix issues, re-render. Always returns structured frame metadata. When MCP_PUBLIC_URL is configured the response includes stateless `urls` ({png,svg,bpc}) you can paste anywhere — the chart data travels inside the URL. Set modelVisible:false to display the image to the user without spending your own image tokens (bulk renders). Pass `save:<path>` to write the output into MCP_FS_WRITE_DIR instead of returning it inline (same jail semantics as before: relative paths joined, absolute re-anchored, only escaping `../` rejected). Width/height are capped at 1600; PNGs are rasterized at 2× for retina sharpness.',
     inputSchema: RenderInputSchema,
     handler: args => renderTool(args),
     format: result => renderToolContent(result as ToolResult<RenderOutput>),
@@ -118,7 +118,7 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: args => getGrammar(args),
   },
   export_chart: {
-    description: 'Turn a validated .bpc source into shareable editor URLs. Validates the source through the same parse/semantic/render pipeline as `render`; on success returns { copyUrl, embedUrl, frame }. copyUrl opens an editable copy in the editor ("anyone can open this to view and copy"); embedUrl is a read-only render target suitable as an iframe src. Returns E_CONFIG if the server has no editor base URL configured (BLUEPRINT_CHART_EDITOR_URL).',
+    description: 'Turn a validated .bpc source into shareable URLs plus an inline visual preview of what was published. Returns { copyUrl, embedUrl, urls?, frame } and a scene-0 PNG image block so you can confirm the chart looks right before sharing. copyUrl opens an editable copy in the editor; embedUrl is a read-only iframe target; urls.{png,svg,bpc} (when MCP_PUBLIC_URL is set) are stateless rendered-image/source links. Set modelVisible:false to show the preview to the user only. Requires BLUEPRINT_CHART_EDITOR_URL; preview failures never block the export.',
     inputSchema: ExportChartInputSchema,
     handler: args => exportChart(args),
     format: result => exportChartContent(result as ToolResult<ExportChartOutput>),
