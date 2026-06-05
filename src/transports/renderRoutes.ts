@@ -39,7 +39,10 @@ function send(
   extraHeaders: Record<string, string> = {},
 ): void {
   res.statusCode = status
-  res.setHeader('Content-Type', contentType)
+  // RFC 7232: a 304 carries no body — pass '' to skip the Content-Type header.
+  if (contentType) {
+    res.setHeader('Content-Type', contentType)
+  }
   res.setHeader('X-Content-Type-Options', 'nosniff')
   for (const [k, v] of Object.entries(extraHeaders)) {
     res.setHeader(k, v)
@@ -116,7 +119,15 @@ export function createRenderRoutesHandler(deps: RenderRoutesDeps) {
     const etag = `"${createHash('sha256').update(canonical).digest('hex')}"`
 
     if (req.headers['if-none-match'] === etag) {
-      send(res, 304, 'text/plain', '', cacheHeaders(etag))
+      send(res, 304, '', '', cacheHeaders(etag))
+      return
+    }
+
+    // Cheap cache hits never cost a token — only render work does (mirrors the
+    // free 304 path above). The lookup must therefore precede the rate limit.
+    const cached = deps.cache?.get(etag)
+    if (cached) {
+      send(res, 200, cached.contentType, cached.body, cacheHeaders(etag))
       return
     }
 
@@ -126,15 +137,9 @@ export function createRenderRoutesHandler(deps: RenderRoutesDeps) {
       return
     }
 
-    const cached = deps.cache?.get(etag)
-    if (cached) {
-      send(res, 200, cached.contentType, cached.body, cacheHeaders(etag))
-      return
-    }
-
     let source: string
     try {
-      source = fromUrlSafeB64(decodeURIComponent(rawB64))
+      source = fromUrlSafeB64(rawB64)
     }
     catch {
       send(res, 400, 'application/json', JSON.stringify({

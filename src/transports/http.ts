@@ -212,6 +212,9 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
     : undefined
 
   const renderRateLimit = Number(process.env.MCP_RENDER_RATE_LIMIT_PER_MINUTE?.trim() || 30)
+  if (process.env.MCP_RENDER_RATE_LIMIT_PER_MINUTE?.trim() && !Number.isFinite(renderRateLimit)) {
+    logEvent(silent, { event: 'render_rate_limit_invalid', raw: process.env.MCP_RENDER_RATE_LIMIT_PER_MINUTE })
+  }
   const renderLimiter = Number.isFinite(renderRateLimit) && renderRateLimit > 0 ? new TokenBucketLimiter(renderRateLimit) : undefined
   const pkgVersion = (JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf8')) as { version: string }).version
   const handleRenderRoute = createRenderRoutesHandler({

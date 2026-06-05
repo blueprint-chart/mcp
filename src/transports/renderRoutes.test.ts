@@ -117,6 +117,17 @@ describe('render routes', () => {
     expect(res.headers.get('retry-after')).toBe('60')
   })
 
+  it('serves a cached URL without spending a token (cache lookup precedes the limit)', async () => {
+    // Allow exactly the first request (which renders + populates the cache),
+    // deny everything after — the second request must still hit the cache.
+    let allowed = 1
+    const handler = makeHandler({ consumeRateLimit: () => allowed-- > 0 })
+    const first = await request(handler, `/render.png?bpc64=${B64}&width=400&height=250`)
+    expect(first.status).toBe(200)
+    const second = await request(handler, `/render.png?bpc64=${B64}&width=400&height=250`)
+    expect(second.status).toBe(200) // served from cache, no token required
+  })
+
   it('clamps width/height to the core maximum instead of erroring', async () => {
     const handler = makeHandler()
     const res = await request(handler, `/render.png?bpc64=${B64}&width=99999`)
