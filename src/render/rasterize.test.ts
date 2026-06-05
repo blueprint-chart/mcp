@@ -27,9 +27,15 @@ describe('rasterizeToPng', () => {
   })
 
   it('renders text without system fonts (bundled DejaVu only)', async () => {
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40">'
+    const withText = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40">'
       + '<text x="5" y="20" font-family="sans-serif" font-size="14">Hi</text></svg>'
-    const png = await rasterizeToPng(svg, { width: 100 })
-    expect(png.length).toBeGreaterThan(100) // produced real pixels, no font panic
+    const noText = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"></svg>'
+    const [textPng, blankPng] = await Promise.all([
+      rasterizeToPng(withText, { width: 100 }),
+      rasterizeToPng(noText, { width: 100 }),
+    ])
+    // If the bundled font failed to load, resvg silently drops the text and both
+    // renders collapse to the same blank canvas — this comparison catches that.
+    expect(textPng.length).toBeGreaterThan(blankPng.length)
   })
 })
