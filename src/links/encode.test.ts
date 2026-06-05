@@ -37,8 +37,13 @@ describe('fromUrlSafeB64', () => {
   })
 
   it('decodes despite stripped padding', () => {
-    expect(fromUrlSafeB64(toUrlSafeB64('a'))).toBe('a') // 1 byte → 2 padding chars stripped
+    expect(fromUrlSafeB64(toUrlSafeB64('a'))).toBe('a') // 1 byte encodes to 2 b64 chars; 2 padding chars were stripped
     expect(fromUrlSafeB64(toUrlSafeB64('ab'))).toBe('ab') // 2 bytes → 1 padding char stripped
+    expect(fromUrlSafeB64('YQ')).toBe('a') // direct decode of a known pre-stripped string
+  })
+
+  it('decodes empty input to an empty string', () => {
+    expect(fromUrlSafeB64('')).toBe('')
   })
 
   it('throws on characters outside the url-safe alphabet', () => {
