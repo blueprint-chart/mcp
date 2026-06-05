@@ -36,7 +36,7 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && rm -rf dist/render/fonts && cp -R src/render/fonts dist/render/fonts && node -e \"require('node:fs').accessSync('dist/render/fonts/DejaVuSans.ttf')\"",
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
