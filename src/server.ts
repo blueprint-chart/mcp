@@ -82,7 +82,7 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: args => recommendChartType(args),
   },
   render: {
-    description: 'Render a .bpc source to SVG (default), PNG, or HTML. With format:"png" the chart comes back as an inline IMAGE you and the user can both see — render, look at the result, fix issues, re-render. Always returns structured frame metadata. When MCP_PUBLIC_URL is configured the response includes stateless `urls` ({png,svg,bpc}) you can paste anywhere — the chart data travels inside the URL. Set modelVisible:false to display the image to the user without spending your own image tokens (bulk renders). Pass `save:<path>` to write the output into MCP_FS_WRITE_DIR instead of returning it inline (same jail semantics as before: relative paths joined, absolute re-anchored, only escaping `../` rejected). Width/height are capped at 1600; PNGs are rasterized at 2× for retina sharpness.',
+    description: 'Render a .bpc source to SVG (default), PNG, or HTML. With format:"png" the chart comes back as an inline IMAGE you and the user can both see — render, look at the result, fix issues, re-render. Always returns structured frame metadata. When MCP_PUBLIC_URL is set the response includes stateless `urls` ({png,svg,bpc}). Set modelVisible:false to display the image to the user without spending model image tokens. Pass `save:<path>` to write the output into MCP_FS_WRITE_DIR instead of returning it inline. Width/height are capped at 1600; PNGs are rasterized at 2× for retina sharpness.',
     inputSchema: RenderInputSchema,
     handler: args => renderTool(args),
     format: result => renderToolContent(result as ToolResult<RenderOutput>),

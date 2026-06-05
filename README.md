@@ -252,21 +252,21 @@ Response:
 }
 ```
 
-The `urls` field is only present when `MCP_PUBLIC_URL` is configured. Set `modelVisible:false` in the request to display the inline image to the user without spending your own image tokens.
+The `urls` field is only present when `MCP_PUBLIC_URL` is configured; every `render` and `export_chart` response then includes these stateless links, with the chart data travelling inside the URL (as `bpc64`, a URL-safe base64 encoding of the `.bpc` source) — no session, no server state required. Set `modelVisible:false` in the request to display the inline image to the user without spending model image tokens.
 
 If rasterization fails (rare), `errors[]` is non-empty — each entry has a `code` (`"E_RENDER"`) and a `suggestion` — **and the response still includes** the SVG that was successfully produced, so partial success is preserved.
 
 #### Hosted render URLs
 
-When `MCP_PUBLIC_URL` is set, every `render` and `export_chart` response includes a `urls` field with stateless links. The chart data travels inside the URL (as `bpc64`, a URL-safe base64 encoding of the `.bpc` source) — no session, no server state required.
-
 Embed a chart directly in a page:
 
 ```html
-<img src="https://<your-mcp-host>/render.png?bpc64=…" alt="My chart" width="800" height="500">
+<img src="https://<your-mcp-host>/render.png?bpc64=<bpc64value>&width=800&height=500" alt="My chart" width="800" height="500">
 ```
 
 `/render.bpc` serves the raw `.bpc` source — it's "view source" for any chart URL, handy for sharing or reproducing a chart from its link alone.
+
+Sources whose encoding exceeds 8 KB return `413` from the endpoints (and the tool omits `urls`, returning `urlsOmitted: "source-too-large"` instead) — use the inline PNG for very large charts.
 
 ### Reading a resource
 
