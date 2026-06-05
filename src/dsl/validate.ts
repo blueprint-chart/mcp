@@ -71,8 +71,9 @@ export function validateAst(ast: ChartNode): ValidationIssue[] {
   }
   else {
     for (const entry of dataEntries) {
-      // The `_series` pseudo-key is a multi-series header, not a row label.
-      if (entry.key === '_series') {
+      // The `series` meta-row names columns, not a row label. A quoted
+      // `"series"` row is a real data category, so only skip the meta-row.
+      if (entry.key === 'series' && !entry.quotedKey) {
         continue
       }
       if (looksLikeUnquotedKey(entry)) {

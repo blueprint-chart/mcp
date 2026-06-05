@@ -23,7 +23,7 @@ const RULES: Rule[] = [
     // backslash-t, not an actual tab.
     match: /Expected .*\\t.* but .* found/,
     message: 'A data row must be written as `"Label" = value` (a quoted label, `=`, then the value). Multiple values per row are comma-separated.',
-    suggestion: 'Single series: `"Asia" = 59.4`. Multi-series: add `_series = "Gold","Silver"` then `"USA" = 40,44`.',
+    suggestion: 'Single series: `"Asia" = 59.4`. Multi-series: add `series = "Gold","Silver"` then `"USA" = 40,44`.',
   },
   {
     match: /Expected whitespace but ":" found/,

@@ -66,13 +66,13 @@ export function collectWarnings(ast: ChartNode): WarningIssue[] {
 
   if (MULTI_SERIES_TYPES.has(type)) {
     const entries = ast.data?.entries ?? []
-    const hasSeriesHeader = entries.some(e => e.key === '_series')
+    const hasSeriesHeader = entries.some(e => e.key === 'series' && !e.quotedKey)
     const hasMultiValueRow = entries.some(e => (e.values?.length ?? 0) > 1)
     if (!hasSeriesHeader && !hasMultiValueRow && entries.length > 0) {
       issues.push({
         code: 'W_MULTISERIES_SHAPE',
         path: 'data',
-        message: `A ${type} chart needs multiple series, but the data parsed as single-value rows with no \`_series\` header. Add a \`_series = "A","B",…\` row and comma-separated values per row (e.g. \`"USA" = 40,44,42\`).`,
+        message: `A ${type} chart needs multiple series, but the data parsed as single-value rows with no \`series\` header. Add a \`series = "A","B",…\` row and comma-separated values per row (e.g. \`"USA" = 40,44,42\`).`,
       })
     }
   }

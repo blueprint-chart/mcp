@@ -27,7 +27,7 @@ describe('collectWarnings', () => {
   })
 
   it('is silent for a well-formed multi-series chart', () => {
-    const w = warn('chart bar-multi {\n  data {\n    _series = "X","Y"\n    "A" = 1,2\n    "B" = 3,4\n  }\n}')
+    const w = warn('chart bar-multi {\n  data {\n    series = "X","Y"\n    "A" = 1,2\n    "B" = 3,4\n  }\n}')
     expect(w.filter(i => i.code === 'W_MULTISERIES_SHAPE')).toEqual([])
   })
 
