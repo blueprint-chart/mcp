@@ -15,11 +15,15 @@ describe('dataKey helpers', () => {
   it('looksLikeUnquotedKey passes proper-noun labels through', () => {
     expect(looksLikeUnquotedKey(node('China'))).toBe(false)
     expect(looksLikeUnquotedKey(node('United States'))).toBe(false)
-    expect(looksLikeUnquotedKey(node('_series'))).toBe(false)
   })
 
-  it('looksLikeQuotedLabel excludes _series pseudo-key', () => {
-    expect(looksLikeQuotedLabel(node('_series'))).toBe(false)
+  it('looksLikeQuotedLabel excludes the unquoted series meta-row', () => {
+    expect(looksLikeQuotedLabel(node('series'))).toBe(false)
+  })
+
+  it('looksLikeQuotedLabel treats a quoted "series" row as a real label', () => {
+    const quoted = { key: 'series', value: 1, quotedKey: true } as unknown as PropertyNode
+    expect(looksLikeQuotedLabel(quoted)).toBe(true)
   })
 
   it('looksLikeQuotedLabel accepts proper-noun labels', () => {

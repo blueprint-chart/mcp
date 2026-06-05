@@ -49,7 +49,7 @@ function summarizeScenes(ast: ChartNode): SceneSummary[] {
 
 function summarizeData(ast: ChartNode): DataSummary {
   const entries = ast.data?.entries ?? []
-  const seriesEntry = entries.find(e => e.key === '_series')
+  const seriesEntry = entries.find(e => e.key === 'series' && !e.quotedKey)
   const seriesValues = seriesEntry
     ? (seriesEntry.values ?? [seriesEntry.value])
     : []

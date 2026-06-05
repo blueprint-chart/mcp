@@ -56,8 +56,8 @@ describe('inspect_dsl', () => {
 })
 
 describe('inspect_dsl fixes', () => {
-  it('lists ALL series names from the _series header', () => {
-    const src = 'chart bar-multi {\n  data {\n    _series = "Hardware","Software","Services"\n    "Q1" = 1,2,3\n  }\n}'
+  it('lists ALL series names from the series header', () => {
+    const src = 'chart bar-multi {\n  data {\n    series = "Hardware","Software","Services"\n    "Q1" = 1,2,3\n  }\n}'
     const r = inspectDsl({ source: src })
     expect(r.ok).toBe(true)
     if (r.ok) {
@@ -67,7 +67,7 @@ describe('inspect_dsl fixes', () => {
   })
 
   it('reports hasHighlights:true when a highlight lives inside a scene', () => {
-    const src = 'chart area-stacked {\n  data {\n    _series = "A","B"\n    "2000" = 1,2\n  }\n  scene "S1" {\n    highlight "A"\n  }\n}'
+    const src = 'chart area-stacked {\n  data {\n    series = "A","B"\n    "2000" = 1,2\n  }\n  scene "S1" {\n    highlight "A"\n  }\n}'
     const r = inspectDsl({ source: src })
     expect(r.ok).toBe(true)
     if (r.ok) {
@@ -76,7 +76,7 @@ describe('inspect_dsl fixes', () => {
   })
 
   it('reports hasColorizes:true when a colorize lives inside a scene', () => {
-    const src = 'chart area-stacked {\n  data {\n    _series = "A","B"\n    "2000" = 1,2\n  }\n  scene "S1" {\n    colorize "A" { color = "#f00" }\n  }\n}'
+    const src = 'chart area-stacked {\n  data {\n    series = "A","B"\n    "2000" = 1,2\n  }\n  scene "S1" {\n    colorize "A" { color = "#f00" }\n  }\n}'
     const r = inspectDsl({ source: src })
     expect(r.ok).toBe(true)
     if (r.ok) {

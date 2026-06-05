@@ -5,7 +5,7 @@ import { ErrorCode } from '../errors'
 const VALID = 'chart bar-vertical {\n  title = "Hi"\n  data {\n    "A" = 1\n  }\n}\n'
 
 // Multi-series chart with two scenes — exercises the scene-0 preview path.
-const MULTI_SCENE = 'chart area-stacked {\n  title = "Steps"\n  data {\n    _series = "A","B"\n    "2000" = 1,2\n    "2001" = 3,4\n  }\n  scene "S1" {\n    highlight "A"\n  }\n  scene "S2" {\n    highlight "B"\n  }\n}\n'
+const MULTI_SCENE = 'chart area-stacked {\n  title = "Steps"\n  data {\n    series = "A","B"\n    "2000" = 1,2\n    "2001" = 3,4\n  }\n  scene "S1" {\n    highlight "A"\n  }\n  scene "S2" {\n    highlight "B"\n  }\n}\n'
 
 afterEach(() => {
   delete process.env.BLUEPRINT_CHART_EDITOR_URL

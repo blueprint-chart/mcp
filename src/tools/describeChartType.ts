@@ -126,7 +126,7 @@ function buildProperties(canonical: string): ChartTypeProperty[] {
 }
 
 function inferDataShape(name: string, example: string): ChartTypeDataShape {
-  if (example.includes('_series')) {
+  if (example.includes('series = ')) {
     return { kind: 'multi-series', example }
   }
   if (example.includes('data')) {
