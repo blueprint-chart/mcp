@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url'
 import { validateDsl, ValidateInputSchema } from './tools/validate'
 import { inspectDsl, InspectInputSchema } from './tools/inspect'
 import { recommendChartType, RecommendInputSchema } from './tools/recommend'
-import { renderTool, RenderInputSchema } from './tools/render'
+import { renderTool, RenderInputSchema, renderToolContent, type RenderOutput } from './tools/render'
 import { listChartTypes, ListChartTypesInputSchema } from './tools/listChartTypes'
 import { describeChartType, DescribeChartTypeInputSchema } from './tools/describeChartType'
 import { getExample, GetExampleInputSchema } from './tools/getExample'
@@ -26,6 +26,7 @@ import { authorChartPrompt } from './prompts/authorChart'
 import { zodToJsonSchema } from './lib/zodToJsonSchema'
 import type { ToolResult } from './errors'
 import { formatToolResult, type FormattedToolResult } from './toolContent'
+import { getPublicBaseUrl } from './links/editorConfig'
 
 interface ToolDef {
   description: string
@@ -54,7 +55,7 @@ interface ServerIcon {
 }
 
 function buildServerIcons(): ServerIcon[] | undefined {
-  const baseUrl = process.env.MCP_PUBLIC_URL?.trim().replace(/\/+$/, '')
+  const baseUrl = getPublicBaseUrl()
   if (!baseUrl) {
     return undefined
   }
@@ -84,6 +85,7 @@ export const TOOLS: Record<string, ToolDef> = {
     description: 'Render a .bpc source to SVG (default), PNG, or HTML. Always returns structured frame metadata (title, description, byline, source, sourceUrl, note). Pass `save: <path>` to write the primary output to disk and omit it from the response — useful when the LLM client cannot display binary payloads inline. Saving requires MCP_FS_WRITE_DIR to be set; the output always lands inside that directory — relative paths are joined to it and absolute paths are re-anchored under it (e.g. `/tmp/x.png` becomes `<dir>/tmp/x.png`), so any path you pass stays in the sandbox; only `../` traversal that escapes it is rejected.',
     inputSchema: RenderInputSchema,
     handler: args => renderTool(args),
+    format: result => renderToolContent(result as ToolResult<RenderOutput>),
   },
   list_chart_types: {
     description: 'Reference list of every chart type the renderer supports, with aliases and one-line summaries. To choose a type for a dataset, call recommend_chart_type instead.',

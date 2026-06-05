@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { samples } from '@blueprint-chart/lib'
-import { renderTool } from './render'
+import { renderTool, renderToolContent } from './render'
 
 describe('render', () => {
   it('returns pure SVG by default', async () => {
@@ -18,12 +18,12 @@ describe('render', () => {
     }
   })
 
-  it('returns both SVG and PNG when format=png', async () => {
+  it('returns PNG (no svg) when format=png', async () => {
     const r = await renderTool({ source: samples[0]!.dsl, format: 'png', width: 600, height: 400 })
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.data.mimeType).toBe('image/png')
-      expect(r.data.svg).toMatch(/^<svg/)
+      expect(r.data.svg).toBeUndefined() // CHANGED: svg no longer included with png
       expect(r.data.png).toBeTypeOf('string') // base64
       expect(r.data.png!.length).toBeGreaterThan(100)
       expect(r.data.frame).toBeDefined()
@@ -80,7 +80,7 @@ describe('render — frame defaults', () => {
       expect(r.data.mimeType).toBe('text/html')
       expect(r.data.html).toContain('<div class="bc-frame"')
       expect(r.data.html).toContain('<svg')
-      expect(r.data.svg).toMatch(/^<svg/)
+      expect(r.data.svg).toBeUndefined() // CHANGED: svg no longer included with html
       expect(r.data.frame).toBeDefined()
     }
   })
@@ -265,5 +265,74 @@ describe('render — structured diagnostics', () => {
         expect(r.data.frame, `sample ${s.id} frame`).toBeDefined()
       }
     }
+  })
+})
+
+describe('render png content blocks', () => {
+  const VALID = 'chart bar-vertical {\n  title = "Hi"\n  data {\n    "A" = 1\n  }\n}\n'
+  afterEach(() => {
+    delete process.env.MCP_PUBLIC_URL
+  })
+
+  it('png responses drop the svg field and carry base64 png', async () => {
+    const result = await renderTool({ source: VALID, format: 'png' })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data.png).toMatch(/^[A-Za-z0-9+/=]+$/)
+      expect(result.data.svg).toBeUndefined() // REGRESSION: was included
+      expect(result.data.modelVisible).toBe(true)
+    }
+  })
+
+  it('renderToolContent emits [image, text] and strips base64 from the text block', async () => {
+    const result = await renderTool({ source: VALID, format: 'png' })
+    const formatted = renderToolContent(result)
+    expect(formatted.content).toHaveLength(2)
+    expect(formatted.content[0]).toMatchObject({ type: 'image', mimeType: 'image/png' })
+    const text = (formatted.content[1] as { text: string }).text
+    expect(text).toContain('"frame"')
+    expect(text).not.toContain((result as { data: { png: string } }).data.png.slice(0, 40))
+  })
+
+  it('modelVisible:false adds the user-audience annotation', async () => {
+    const result = await renderTool({ source: VALID, format: 'png', modelVisible: false })
+    const formatted = renderToolContent(result)
+    expect(formatted.content[0]).toMatchObject({ annotations: { audience: ['user'] } })
+  })
+
+  it('svg/html/error results format as a single text block', async () => {
+    const svgResult = await renderTool({ source: VALID, format: 'svg' })
+    expect(renderToolContent(svgResult).content).toHaveLength(1)
+    const errResult = await renderTool({ source: 'chart nope {' })
+    expect(renderToolContent(errResult).isError).toBe(true)
+  })
+
+  it('includes urls on every format when MCP_PUBLIC_URL is set, omits otherwise', async () => {
+    process.env.MCP_PUBLIC_URL = 'https://mcp.example.com'
+    const withUrls = await renderTool({ source: VALID, format: 'svg' })
+    if (withUrls.ok) {
+      expect(withUrls.data.urls?.png).toContain('https://mcp.example.com/render.png?')
+      expect(withUrls.data.urls?.bpc).toContain('/render.bpc?')
+    }
+    delete process.env.MCP_PUBLIC_URL
+    const without = await renderTool({ source: VALID, format: 'svg' })
+    if (without.ok) {
+      expect(without.data.urls).toBeUndefined()
+    }
+  })
+
+  it('sets urlsOmitted for oversized sources instead of failing', async () => {
+    process.env.MCP_PUBLIC_URL = 'https://mcp.example.com'
+    const big = `chart bar-vertical {\n  data {\n${Array.from({ length: 800 }, (_, i) => `    "0r${i}" = 1\n`).join('')}  }\n}\n`
+    const result = await renderTool({ source: big, format: 'svg' })
+    if (result.ok) {
+      expect(result.data.urls).toBeUndefined()
+      expect(result.data.urlsOmitted).toBe('source-too-large')
+    }
+  })
+
+  it('rejects width above 1600 at the schema layer', async () => {
+    const result = await renderTool({ source: VALID, width: 5000 })
+    expect(result.ok).toBe(false)
   })
 })
