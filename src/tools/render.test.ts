@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { samples } from '@blueprint-chart/lib'
 import { renderTool, renderToolContent } from './render'
+import { ErrorCode } from '../errors'
 
 describe('render', () => {
   it('returns pure SVG by default', async () => {
@@ -310,12 +311,14 @@ describe('render png content blocks', () => {
   it('includes urls on every format when MCP_PUBLIC_URL is set, omits otherwise', async () => {
     process.env.MCP_PUBLIC_URL = 'https://mcp.example.com'
     const withUrls = await renderTool({ source: VALID, format: 'svg' })
+    expect(withUrls.ok).toBe(true)
     if (withUrls.ok) {
       expect(withUrls.data.urls?.png).toContain('https://mcp.example.com/render.png?')
       expect(withUrls.data.urls?.bpc).toContain('/render.bpc?')
     }
     delete process.env.MCP_PUBLIC_URL
     const without = await renderTool({ source: VALID, format: 'svg' })
+    expect(without.ok).toBe(true)
     if (without.ok) {
       expect(without.data.urls).toBeUndefined()
     }
@@ -325,6 +328,7 @@ describe('render png content blocks', () => {
     process.env.MCP_PUBLIC_URL = 'https://mcp.example.com'
     const big = `chart bar-vertical {\n  data {\n${Array.from({ length: 800 }, (_, i) => `    "0r${i}" = 1\n`).join('')}  }\n}\n`
     const result = await renderTool({ source: big, format: 'svg' })
+    expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.data.urls).toBeUndefined()
       expect(result.data.urlsOmitted).toBe('source-too-large')
@@ -334,5 +338,8 @@ describe('render png content blocks', () => {
   it('rejects width above 1600 at the schema layer', async () => {
     const result = await renderTool({ source: VALID, width: 5000 })
     expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.code).toBe(ErrorCode.E_INPUT)
+    }
   })
 })

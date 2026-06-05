@@ -210,4 +210,12 @@ describe('per-tool formatter dispatch', () => {
     const content = res.content as Array<{ type: string }>
     expect(content.every(c => c.type === 'text')).toBe(true)
   })
+
+  it('render png via client returns an image block first', async () => {
+    const { client } = await connectInMemory()
+    const res = await client.callTool({ name: 'render', arguments: { source: 'chart bar-vertical {\n  data {\n    "A" = 1\n  }\n}\n', format: 'png' } })
+    const content = res.content as Array<{ type: string }>
+    expect(content[0]?.type).toBe('image')
+    expect(content[1]?.type).toBe('text')
+  })
 })
