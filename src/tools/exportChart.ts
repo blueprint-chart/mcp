@@ -69,6 +69,7 @@ export async function exportChart(input: unknown): Promise<ToolResult<ExportChar
   const previewScene = (validated.ast.scenes?.length ?? 0) > 0 ? 0 : undefined
 
   // Preview must never fail a valid export — degrade to URLs-only.
+  // TODO: renderChart re-runs validatePipeline internally; a renderChartFromAst overload could skip the re-parse (~ms today, fine at preview scale).
   try {
     const preview = await renderChart(parsed.data.source, { format: 'png', scene: previewScene, width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT })
     if (preview.ok) {

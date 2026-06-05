@@ -10,6 +10,7 @@ const MULTI_SCENE = 'chart area-stacked {\n  title = "Steps"\n  data {\n    _ser
 afterEach(() => {
   delete process.env.BLUEPRINT_CHART_EDITOR_URL
   delete process.env.MCP_PUBLIC_URL
+  vi.restoreAllMocks()
 })
 
 describe('exportChart', () => {
@@ -53,11 +54,6 @@ describe('exportChart', () => {
 })
 
 describe('export preview', () => {
-  afterEach(() => {
-    delete process.env.BLUEPRINT_CHART_EDITOR_URL
-    delete process.env.MCP_PUBLIC_URL
-  })
-
   it('attaches a scene-0 png preview and urls when both envs are set', async () => {
     process.env.BLUEPRINT_CHART_EDITOR_URL = 'https://blueprintchart.com'
     process.env.MCP_PUBLIC_URL = 'https://mcp.example.com'
