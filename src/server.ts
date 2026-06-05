@@ -18,7 +18,7 @@ import { listChartTypes, ListChartTypesInputSchema } from './tools/listChartType
 import { describeChartType, DescribeChartTypeInputSchema } from './tools/describeChartType'
 import { getExample, GetExampleInputSchema } from './tools/getExample'
 import { getGrammar, GetGrammarInputSchema } from './tools/getGrammar'
-import { exportChart, ExportChartInputSchema } from './tools/exportChart'
+import { exportChart, ExportChartInputSchema, exportChartContent, type ExportChartOutput } from './tools/exportChart'
 import { searchExamples, SearchExamplesInputSchema } from './tools/searchExamples'
 import { listPalettesTool, ListPalettesInputSchema } from './tools/listPalettes'
 import { listResources, readResource } from './resources/index'
@@ -121,6 +121,7 @@ export const TOOLS: Record<string, ToolDef> = {
     description: 'Turn a validated .bpc source into shareable editor URLs. Validates the source through the same parse/semantic/render pipeline as `render`; on success returns { copyUrl, embedUrl, frame }. copyUrl opens an editable copy in the editor ("anyone can open this to view and copy"); embedUrl is a read-only render target suitable as an iframe src. Returns E_CONFIG if the server has no editor base URL configured (BLUEPRINT_CHART_EDITOR_URL).',
     inputSchema: ExportChartInputSchema,
     handler: args => exportChart(args),
+    format: result => exportChartContent(result as ToolResult<ExportChartOutput>),
   },
 }
 
