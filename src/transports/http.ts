@@ -9,9 +9,13 @@ import {
 } from 'node:http'
 import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer } from '../server.js'
+import { createRenderRoutesHandler, isRenderRoute } from './renderRoutes.js'
+import { renderChart } from '../render/renderChart.js'
+import { createRenderCache } from '../render/renderCache.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PUBLIC_DIR = join(__dirname, '..', '..', 'public')
@@ -206,7 +210,33 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
   const limiter = opts.rateLimitPerMinute && opts.rateLimitPerMinute > 0
     ? new TokenBucketLimiter(opts.rateLimitPerMinute)
     : undefined
-  const pruneTimer = limiter ? setInterval(() => limiter.prune(), 60_000) : undefined
+
+  const renderRateLimit = Number(process.env.MCP_RENDER_RATE_LIMIT_PER_MINUTE?.trim() || 30)
+  const renderLimiter = Number.isFinite(renderRateLimit) && renderRateLimit > 0 ? new TokenBucketLimiter(renderRateLimit) : undefined
+  const pkgVersion = (JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf8')) as { version: string }).version
+  const handleRenderRoute = createRenderRoutesHandler({
+    renderChart,
+    cache: createRenderCache(),
+    consumeRateLimit: ip => renderLimiter ? renderLimiter.consume(ip) : true,
+    withSlot: async (fn) => {
+      const release = await semaphore.acquire()
+      try {
+        return await fn()
+      }
+      finally {
+        release()
+      }
+    },
+    version: pkgVersion,
+    log: fields => logEvent(silent, fields),
+  })
+
+  const pruneTimer = (limiter || renderLimiter)
+    ? setInterval(() => {
+        limiter?.prune()
+        renderLimiter?.prune()
+      }, 60_000)
+    : undefined
   if (pruneTimer && typeof pruneTimer.unref === 'function') {
     pruneTimer.unref()
   }
@@ -249,6 +279,12 @@ export async function startHttp(opts: StartHttpOptions): Promise<HttpHandle> {
       res.setHeader('Content-Type', asset.contentType)
       res.setHeader('Cache-Control', 'public, max-age=86400')
       res.end(asset.body)
+      return
+    }
+
+    // 3b. Stateless render endpoints — public like the static assets above.
+    if (req.method === 'GET' && isRenderRoute(normalizedPath)) {
+      await handleRenderRoute(req, res, url, ip)
       return
     }
 

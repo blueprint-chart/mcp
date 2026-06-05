@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { startHttp } from './http'
+import { toUrlSafeB64 } from '../links/encode'
 
 async function withServer<T>(
   opts: Parameters<typeof startHttp>[0],
@@ -241,6 +242,23 @@ describe('http transport', () => {
       expect(third.status).toBe(429)
       await first.body?.cancel()
       await second.body?.cancel()
+    })
+  })
+
+  it('serves /render.png end-to-end through startHttp', async () => {
+    const b64 = encodeURIComponent(toUrlSafeB64('chart bar-vertical {\n  data {\n    "A" = 1\n  }\n}\n'))
+    await withServer({ port: 0 }, async (url) => {
+      const res = await fetch(`${url}/render.png?bpc64=${b64}`)
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toBe('image/png')
+    })
+  })
+
+  it('render routes bypass bearer auth (public like favicons)', async () => {
+    const b64 = encodeURIComponent(toUrlSafeB64('chart bar-vertical {\n  data {\n    "A" = 1\n  }\n}\n'))
+    await withServer({ port: 0, authToken: 'secret' }, async (url) => {
+      const res = await fetch(`${url}/render.bpc?bpc64=${b64}`)
+      expect(res.status).toBe(200)
     })
   })
 })
