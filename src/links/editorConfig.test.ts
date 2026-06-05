@@ -1,9 +1,10 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { getEditorBaseUrl, getDocsBaseUrl } from './editorConfig'
+import { getEditorBaseUrl, getDocsBaseUrl, getPublicBaseUrl } from './editorConfig'
 
 afterEach(() => {
   delete process.env.BLUEPRINT_CHART_EDITOR_URL
   delete process.env.BLUEPRINT_CHART_DOCS_URL
+  delete process.env.MCP_PUBLIC_URL
 })
 
 describe('getEditorBaseUrl', () => {
@@ -30,5 +31,16 @@ describe('getDocsBaseUrl', () => {
   it('normalizes a set value', () => {
     process.env.BLUEPRINT_CHART_DOCS_URL = 'https://docs.blueprintchart.com/'
     expect(getDocsBaseUrl()).toBe('https://docs.blueprintchart.com')
+  })
+})
+
+describe('getPublicBaseUrl', () => {
+  it('returns undefined when unset', () => {
+    expect(getPublicBaseUrl()).toBeUndefined()
+  })
+
+  it('normalizes trailing slashes', () => {
+    process.env.MCP_PUBLIC_URL = 'https://mcp.blueprintchart.com///'
+    expect(getPublicBaseUrl()).toBe('https://mcp.blueprintchart.com')
   })
 })

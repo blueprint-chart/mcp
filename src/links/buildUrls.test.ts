@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildCopyUrl, buildEmbedUrl, buildDocUrl } from './buildUrls'
+import { buildCopyUrl, buildEmbedUrl, buildDocUrl, buildRenderUrls, MAX_RENDER_URL_LENGTH } from './buildUrls'
 
 const EDITOR = 'https://blueprintchart.com'
 const DOCS = 'https://docs.blueprintchart.com'
@@ -38,5 +38,28 @@ describe('buildDocUrl', () => {
     expect(buildDocUrl('reference/dsl', 'properties', DOCS)).toBe(
       'https://docs.blueprintchart.com/reference/dsl/properties',
     )
+  })
+})
+
+describe('buildRenderUrls', () => {
+  const BASE = 'https://mcp.blueprintchart.com'
+  const SRC = 'chart bar-vertical {\n  data {\n    "A" = 1\n  }\n}\n'
+
+  it('builds png/svg/bpc URLs with dimensions and optional scene', () => {
+    const urls = buildRenderUrls(SRC, { width: 800, height: 500, scene: 2 }, BASE)
+    expect(urls?.png).toMatch(/^https:.*\/render\.png\?bpc64=[A-Za-z0-9_-]+&width=800&height=500&scene=2$/)
+    expect(urls?.svg).toContain('/render.svg?')
+    expect(urls?.bpc).toMatch(/\/render\.bpc\?bpc64=[A-Za-z0-9_-]+$/)
+  })
+
+  it('omits scene when not provided', () => {
+    const urls = buildRenderUrls(SRC, { width: 800, height: 500 }, BASE)
+    expect(urls?.png).not.toContain('scene=')
+  })
+
+  it('returns undefined when any URL would exceed MAX_RENDER_URL_LENGTH', () => {
+    const huge = `chart bar-vertical {\n  data {\n${'    "row" = 1\n'.repeat(800)}  }\n}\n`
+    expect(Buffer.from(huge).toString('base64').length).toBeGreaterThan(MAX_RENDER_URL_LENGTH)
+    expect(buildRenderUrls(huge, { width: 800, height: 500 }, BASE)).toBeUndefined()
   })
 })

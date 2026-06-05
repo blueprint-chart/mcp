@@ -15,3 +15,8 @@ export function getEditorBaseUrl(): string | undefined {
 export function getDocsBaseUrl(): string | undefined {
   return normalize(process.env.BLUEPRINT_CHART_DOCS_URL)
 }
+
+/** Public base URL of the MCP server itself (e.g. https://mcp.blueprintchart.com), or undefined when unset. Same env that gates server icons. */
+export function getPublicBaseUrl(): string | undefined {
+  return normalize(process.env.MCP_PUBLIC_URL)
+}
