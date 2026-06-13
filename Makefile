@@ -32,16 +32,16 @@ clean: ## Remove build artifacts and node_modules
 
 # --- Release ---
 
-release-patch: ## Bump by patch, commit, and tag
+release-patch: ## [fallback] Manual patch release — CI auto-releases from commits; use only if automation is down
 	@$(MAKE) _release-bump BUMP=patch
 
-release-minor: ## Bump by minor, commit, and tag
+release-minor: ## [fallback] Manual minor release — CI auto-releases from commits; use only if automation is down
 	@$(MAKE) _release-bump BUMP=minor
 
-release-major: ## Bump by major, commit, and tag
+release-major: ## [fallback] Manual major release — CI auto-releases from commits; use only if automation is down
 	@$(MAKE) _release-bump BUMP=major
 
-release: ## Set explicit version (VERSION=x.y.z), commit, and tag
+release: ## [fallback] Manual explicit release (VERSION=x.y.z) — CI auto-releases from commits
 	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=x.y.z" >&2; exit 1; fi
 	@$(MAKE) _release-bump BUMP=$(VERSION)
 
