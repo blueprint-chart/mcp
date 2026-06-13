@@ -1,7 +1,7 @@
 {
   "name": "@blueprint-chart/mcp",
   "mcpName": "io.github.blueprint-chart/mcp",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Model Context Protocol server for authoring Blueprint Chart .bpc files with LLMs.",
   "license": "MIT",
   "author": "pirhoo",
