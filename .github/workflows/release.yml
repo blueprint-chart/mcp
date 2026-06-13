@@ -50,9 +50,13 @@ jobs:
           dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
           extra_plugins: |
             @semantic-release/changelog
+            @semantic-release/exec
             @semantic-release/git
             conventional-changelog-conventionalcommits
         env:
-          # npm auth is via OIDC trusted publishing (id-token: write above) — no NODE_AUTH_TOKEN needed.
+          # npm auth is via OIDC trusted publishing (id-token: write above): publish runs
+          # `pnpm publish --provenance` via @semantic-release/exec. NOTE: @semantic-release/npm
+          # is intentionally NOT used — its verifyConditions does an npm-token whoami check that
+          # OIDC trusted publishing does not satisfy (fails EINVALIDNPMTOKEN). Do not add it back.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
