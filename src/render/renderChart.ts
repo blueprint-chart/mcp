@@ -1,8 +1,7 @@
 import type { ChartNode } from '@blueprint-chart/lib'
+import { render } from '@blueprint-chart/lib'
 import { validatePipeline } from './validatePipeline'
 import { extractFrameMetadata, type FrameMetadata } from './frame'
-import { renderSceneState } from './renderSceneState'
-import { rasterizeToPng } from './rasterize'
 import { ErrorCode, toolError, type ToolErrorEntry, type ToolResult } from '../errors'
 
 /** Single source of truth for output dimensions (eng review D7). */
@@ -84,12 +83,9 @@ export async function renderChart(source: string, opts: RenderChartOptions): Pro
   const width = clampDimension(opts.width)
   const height = clampDimension(opts.height)
 
-  let svg: string
-  let html: string | undefined
+  let chart: Awaited<ReturnType<typeof render>>
   try {
-    const result = renderSceneState(source, { sceneIndex: opts.scene, width, height })
-    svg = ensureSvgNamespace(result.svg)
-    html = result.html
+    chart = await render(source, { scene: opts.scene, width, height })
   }
   catch (err) {
     return {
@@ -103,10 +99,37 @@ export async function renderChart(source: string, opts: RenderChartOptions): Pro
   }
 
   if (opts.format === 'svg') {
-    return { ok: true, body: svg, contentType: 'image/svg+xml', frame }
+    try {
+      const svg = ensureSvgNamespace(await chart.toSvg())
+      return { ok: true, body: svg, contentType: 'image/svg+xml', frame }
+    }
+    catch (err) {
+      return {
+        ok: false,
+        error: toolError(ErrorCode.E_RENDER, [{
+          code: 'E_RENDER_UNKNOWN',
+          path: 'render',
+          message: err instanceof Error ? err.message : String(err),
+        }]),
+      }
+    }
   }
 
   if (opts.format === 'html') {
+    let html: string
+    try {
+      html = await chart.toHtml()
+    }
+    catch (err) {
+      return {
+        ok: false,
+        error: toolError(ErrorCode.E_RENDER, [{
+          code: 'E_RENDER_UNKNOWN',
+          path: 'render',
+          message: err instanceof Error ? err.message : String(err),
+        }]),
+      }
+    }
     if (!html) {
       return {
         ok: false,
@@ -122,8 +145,8 @@ export async function renderChart(source: string, opts: RenderChartOptions): Pro
 
   try {
     const rasterWidth = Math.min(width * RASTER_SCALE, MAX_RENDER_DIMENSION)
-    const png = await rasterizeToPng(svg, { width: rasterWidth })
-    return { ok: true, body: png, contentType: 'image/png', frame }
+    const png = await chart.toPng({ width: rasterWidth })
+    return { ok: true, body: Buffer.from(png), contentType: 'image/png', frame }
   }
   catch (err) {
     return {

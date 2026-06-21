@@ -37,7 +37,7 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsc && rm -rf dist/render/fonts && cp -R src/render/fonts dist/render/fonts && node -e \"require('node:fs').accessSync('dist/render/fonts/DejaVuSans.ttf')\"",
+    "build": "tsc",
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -48,11 +48,8 @@
   },
   "dependencies": {
     "@blueprint-chart/docs": "0.1.32",
-    "@blueprint-chart/lib": "^0.1.32",
+    "@blueprint-chart/lib": "^0.4.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@napi-rs/canvas": "^0.1.71",
-    "@resvg/resvg-js": "^2.6.2",
-    "jsdom": "^26.1.0",
     "lru-cache": "^11.5.1",
     "zod": "^3.23.8",
     "zod-to-json-schema": "^3.25.2"
@@ -63,7 +60,6 @@
     "@semantic-release/exec": "^7",
     "@semantic-release/git": "^10",
     "@stylistic/eslint-plugin": "^4.4.1",
-    "@types/jsdom": "^21.1.7",
     "@types/node": "^22.10.0",
     "conventional-changelog-conventionalcommits": "^8",
     "eslint": "^9.18.0",

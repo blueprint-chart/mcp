@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { samples } from '@blueprint-chart/lib'
-import { renderSceneState } from '../../src/render/renderSceneState'
+import { samples, render } from '@blueprint-chart/lib'
 
 const PICK = [
   'letter-frequency',
@@ -17,10 +16,11 @@ describe('golden render', () => {
     if (!sample) {
       continue
     }
-    it(`renders stable SVG for sample "${id}"`, () => {
-      const result = renderSceneState(sample.dsl, { sceneIndex: 0, width: 800, height: 500 })
+    it(`renders stable SVG for sample "${id}"`, async () => {
+      const chart = await render(sample.dsl, { scene: 0, width: 800, height: 500 })
+      const svg = await chart.toSvg()
       // Normalize transient bits: D3-generated IDs and `url(#…)` refs.
-      const normalized = result.svg
+      const normalized = svg
         .replace(/id="[a-zA-Z0-9_-]+"/g, 'id="X"')
         .replace(/url\(#[a-zA-Z0-9_-]+\)/g, 'url(#X)')
       expect(normalized).toMatchSnapshot()
