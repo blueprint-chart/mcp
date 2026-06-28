@@ -32,6 +32,7 @@ import { getPublicBaseUrl } from './links/editorConfig'
 interface ToolDef {
   description: string
   inputSchema: Parameters<typeof zodToJsonSchema>[0]
+  outputSchema?: Parameters<typeof zodToJsonSchema>[0]
   handler: (args: unknown) => ToolResult<unknown> | Promise<ToolResult<unknown>>
   /** Optional content-block formatter. Defaults to formatToolResult (single text block). */
   format?: (result: ToolResult<unknown>) => FormattedToolResult
@@ -164,6 +165,7 @@ export function createServer(): Server {
       name,
       description: def.description,
       inputSchema: zodToJsonSchema(def.inputSchema),
+      ...(def.outputSchema && { outputSchema: zodToJsonSchema(def.outputSchema) }),
       ...(TOOL_ANNOTATIONS[name] && { annotations: TOOL_ANNOTATIONS[name] }),
     })),
   }))

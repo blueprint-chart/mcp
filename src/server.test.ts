@@ -74,6 +74,17 @@ describe('server', () => {
     expect(renderSchema.properties.save).toBeDefined()
   })
 
+  it('does not yet require outputSchema on every tool (emit is conditional)', async () => {
+    const { client } = await connectInMemory()
+    const r = await client.listTools()
+    // Tools without a declared outputSchema simply omit the field.
+    for (const t of r.tools) {
+      if ('outputSchema' in t) {
+        expect(t.outputSchema).toMatchObject({ type: 'object' })
+      }
+    }
+  })
+
   it('calls validate_dsl successfully for a sample', async () => {
     const { client } = await connectInMemory()
     const r = await client.callTool({
