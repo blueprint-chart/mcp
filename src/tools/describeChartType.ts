@@ -14,6 +14,33 @@ export const DescribeChartTypeInputSchema = z.object({
 }).strict()
 export type DescribeChartTypeInput = z.infer<typeof DescribeChartTypeInputSchema>
 
+export const DescribeChartTypeOutputSchema = z.object({
+  name: z.string().describe('Canonical chart-type identifier.'),
+  aliases: z.array(z.string()).describe('Accepted alias names.'),
+  summary: z.string().describe('One-line description.'),
+  whenToUse: z.array(z.string()).describe('Situations this chart type fits.'),
+  whenNotToUse: z.array(z.string()).describe('Situations to avoid it.'),
+  properties: z.array(z.object({
+    key: z.string().describe('Property name.'),
+    type: z.string().describe('Property value type.'),
+    description: z.string().optional().describe('What the property does.'),
+    choices: z.array(z.string()).optional().describe('Allowed values, for enum properties.'),
+    default: z.unknown().optional().describe('Default value, if any.'),
+  })).describe('Supported chart properties.'),
+  directives: z.array(z.object({
+    name: z.string().describe('Directive name (e.g. highlight, annotation).'),
+    status: z.string().describe('Capability status for this chart type.'),
+    description: z.string().describe('What the directive does.'),
+    note: z.string().optional().describe('Caveat or detail.'),
+  })).describe('Supported directives.'),
+  dataShape: z.object({
+    kind: z.enum(['single-series', 'multi-series', 'unknown']).describe('Expected data shape.'),
+    example: z.string().describe('Example data block.'),
+  }).describe('The data shape this chart type expects.'),
+  exampleSlug: z.string().optional().describe('Id of a canonical sample for this type.'),
+  docsUrl: z.string().optional().describe('Public docs URL.'),
+})
+
 export interface ChartTypeProperty {
   key: string
   type: string

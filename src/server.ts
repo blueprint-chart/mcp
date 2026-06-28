@@ -15,13 +15,13 @@ import { validateDsl, ValidateInputSchema, ValidateOutputSchema } from './tools/
 import { inspectDsl, InspectInputSchema, InspectOutputSchema } from './tools/inspect'
 import { recommendChartType, RecommendInputSchema, RecommendOutputSchema } from './tools/recommend'
 import { renderTool, RenderInputSchema, renderToolContent, type RenderOutput } from './tools/render'
-import { listChartTypes, ListChartTypesInputSchema } from './tools/listChartTypes'
-import { describeChartType, DescribeChartTypeInputSchema } from './tools/describeChartType'
-import { getExample, GetExampleInputSchema } from './tools/getExample'
-import { getGrammar, GetGrammarInputSchema } from './tools/getGrammar'
+import { listChartTypes, ListChartTypesInputSchema, ListChartTypesOutputSchema } from './tools/listChartTypes'
+import { describeChartType, DescribeChartTypeInputSchema, DescribeChartTypeOutputSchema } from './tools/describeChartType'
+import { getExample, GetExampleInputSchema, GetExampleOutputSchema } from './tools/getExample'
+import { getGrammar, GetGrammarInputSchema, GetGrammarOutputSchema } from './tools/getGrammar'
 import { exportChart, ExportChartInputSchema, exportChartContent, type ExportChartOutput } from './tools/exportChart'
-import { searchExamples, SearchExamplesInputSchema } from './tools/searchExamples'
-import { listPalettesTool, ListPalettesInputSchema } from './tools/listPalettes'
+import { searchExamples, SearchExamplesInputSchema, SearchExamplesOutputSchema } from './tools/searchExamples'
+import { listPalettesTool, ListPalettesInputSchema, ListPalettesOutputSchema } from './tools/listPalettes'
 import { listResources, readResource } from './resources/index'
 import { authorChartPrompt } from './prompts/authorChart'
 import { zodToJsonSchema } from './lib/zodToJsonSchema'
@@ -95,31 +95,37 @@ export const TOOLS: Record<string, ToolDef> = {
   list_chart_types: {
     description: 'Reference list of every chart type the renderer supports, with aliases and one-line summaries. To choose a type for a dataset, call recommend_chart_type instead.',
     inputSchema: ListChartTypesInputSchema,
+    outputSchema: ListChartTypesOutputSchema,
     handler: () => listChartTypes(),
   },
   describe_chart_type: {
     description: 'Return everything an LLM needs to write a .bpc for a given chart type — typically your second call, after recommend_chart_type. Input: { chartType: "bar-horizontal" } (or any canonical/alias name). Returns summary, when-to-use, when-NOT-to-use, full property list with enum choices, data-shape example, and a pointer to a canonical sample.',
     inputSchema: DescribeChartTypeInputSchema,
+    outputSchema: DescribeChartTypeOutputSchema,
     handler: args => describeChartType(args),
   },
   get_example: {
     description: 'Return a canonical .bpc example. Pass { name } for a specific sample id, { chartType } for the first sample of that type, or no args for a starter sample.',
     inputSchema: GetExampleInputSchema,
+    outputSchema: GetExampleOutputSchema,
     handler: args => getExample(args),
   },
   search_examples: {
     description: 'Find canonical .bpc examples by topic keywords and/or chart type. Returns ranked pointers { id, title, description, chartType } — call get_example with an id to fetch the full DSL.',
     inputSchema: SearchExamplesInputSchema,
+    outputSchema: SearchExamplesOutputSchema,
     handler: args => searchExamples(args),
   },
   list_palettes: {
     description: 'List every named colour palette with its label and hex colours, for use in `colorPalette = "<name>"`.',
     inputSchema: ListPalettesInputSchema,
+    outputSchema: ListPalettesOutputSchema,
     handler: () => listPalettesTool(),
   },
   get_grammar: {
     description: 'Return the .bpc DSL grammar as markdown. Pass { section: "chart" | "data" | "properties" | "scenes" | "annotations" } for a focused subset, or no args for the full grammar.',
     inputSchema: GetGrammarInputSchema,
+    outputSchema: GetGrammarOutputSchema,
     handler: args => getGrammar(args),
   },
   export_chart: {

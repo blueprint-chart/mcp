@@ -7,6 +7,15 @@ import { toolOk, type ToolResult } from '../errors'
 export const ListChartTypesInputSchema = z.object({}).strict()
 export type ListChartTypesInput = z.infer<typeof ListChartTypesInputSchema>
 
+export const ListChartTypesOutputSchema = z.object({
+  chartTypes: z.array(z.object({
+    name: z.string().describe('Canonical chart-type identifier.'),
+    aliases: z.array(z.string()).describe('Accepted alias names.'),
+    summary: z.string().describe('One-line description (may be empty if the doc is missing).'),
+    docsUrl: z.string().optional().describe('Public docs URL for this chart type.'),
+  })).describe('Every renderable chart type.'),
+})
+
 export interface ChartTypeListEntry {
   name: string
   aliases: string[]

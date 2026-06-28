@@ -10,6 +10,16 @@ export const SearchExamplesInputSchema = z.object({
 }).strict()
 export type SearchExamplesInput = z.infer<typeof SearchExamplesInputSchema>
 
+export const SearchExamplesOutputSchema = z.object({
+  results: z.array(z.object({
+    id: z.string().describe('Sample id (pass to get_example).'),
+    title: z.string().describe('Sample title.'),
+    description: z.string().describe('Sample description.'),
+    chartType: z.string().describe('Chart type of the sample.'),
+    score: z.number().describe('Match score used for ordering.'),
+  })).describe('Ranked sample pointers, best first.'),
+})
+
 export interface SearchExampleHit {
   id: string
   title: string

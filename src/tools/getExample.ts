@@ -9,6 +9,13 @@ export const GetExampleInputSchema = z.object({
 }).strict()
 export type GetExampleInput = z.infer<typeof GetExampleInputSchema>
 
+export const GetExampleOutputSchema = z.object({
+  id: z.string().describe('Sample id.'),
+  title: z.string().describe('Sample title.'),
+  chartType: z.string().describe('Chart type of the sample.'),
+  dsl: z.string().describe('The full .bpc source of the sample.'),
+})
+
 export interface GetExampleOutput {
   id: string
   title: string
