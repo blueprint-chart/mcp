@@ -25,7 +25,7 @@ export function formatToolResult<T>(result: ToolResult<T>): FormattedToolResult 
   if (result.ok) {
     return {
       content: [{ type: 'text', text: JSON.stringify(result.data, null, 2) }],
-      structuredContent: result.data as Record<string, unknown>,
+      structuredContent: result.data,
     }
   }
   return {

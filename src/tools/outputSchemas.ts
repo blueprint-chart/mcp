@@ -7,6 +7,7 @@ export const IssueSchema = z.object({
   path: z.string().describe('Dotted path to the offending node, or empty string.'),
   message: z.string().describe('Human-readable explanation of the issue.'),
   suggestion: z.string().optional().describe('Actionable fix, when one is known.'),
+  context: z.record(z.unknown()).optional().describe('Structured error context (e.g. the offending value and the set of known values).'),
 }).describe('A validation error or warning entry.')
 
 // Mirrors FrameMetadata (src/render/frame.ts:3).
@@ -30,6 +31,6 @@ export const RenderUrlsSchema = z.object({
 export const ChartRecommendationSchema = z.object({
   chartType: z.string().describe('Canonical chart-type identifier.'),
   label: z.string().describe('Human-readable chart-type label.'),
-  fitness: z.string().describe('Fitness rating for the data shape (RecommendationFitness union).'),
+  fitness: z.enum(['best', 'good', 'alternative']).describe('Fitness rating for the data shape (RecommendationFitness).'),
   reason: z.string().describe('Why this chart type fits (or does not).'),
 }).describe('A ranked chart-type recommendation.')

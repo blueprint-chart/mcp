@@ -18,6 +18,6 @@ describe('shared sub-schemas parse representative data', () => {
     expect(() => IssueSchema.parse({ code: 'E_X', path: '', message: 'm' })).not.toThrow()
     expect(() => FrameMetadataSchema.parse({ title: 't' })).not.toThrow()
     expect(() => RenderUrlsSchema.parse({ png: 'p', svg: 's', bpc: 'b' })).not.toThrow()
-    expect(() => ChartRecommendationSchema.parse({ chartType: 'line', label: 'Line', fitness: 'ideal', reason: 'r' })).not.toThrow()
+    expect(() => ChartRecommendationSchema.parse({ chartType: 'line', label: 'Line', fitness: 'best', reason: 'r' })).not.toThrow()
   })
 })

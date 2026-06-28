@@ -30,6 +30,13 @@ describe('output conformance: validate/inspect/recommend', () => {
     const r = await client.callTool({ name: 'validate_dsl', arguments: { source: BAR } })
     expect(() => ValidateOutputSchema.parse(r.structuredContent)).not.toThrow()
   })
+  it('validate_dsl error path with context conforms', async () => {
+    const BAD = 'chart notarealtype {\n  data { "A" = 1 }\n}'
+    const r = await client.callTool({ name: 'validate_dsl', arguments: { source: BAD } })
+    const parsed = ValidateOutputSchema.parse(r.structuredContent)
+    expect(parsed.errors.length).toBeGreaterThan(0)
+    expect(parsed.errors[0]!.context).toBeDefined()
+  })
   it('inspect_dsl structuredContent conforms', async () => {
     const r = await client.callTool({ name: 'inspect_dsl', arguments: { source: BAR } })
     expect(() => InspectOutputSchema.parse(r.structuredContent)).not.toThrow()
@@ -72,6 +79,11 @@ describe('output conformance: render and export_chart (custom formatters)', () =
     const r = await client.callTool({ name: 'render', arguments: { source: BAR, format: 'svg' } })
     expect(() => RenderOutputSchema.parse(r.structuredContent)).not.toThrow()
     expect((r.structuredContent as Record<string, unknown>).svg).toBeUndefined()
+  })
+  it('render structuredContent conforms (png)', async () => {
+    const r = await client.callTool({ name: 'render', arguments: { source: BAR, format: 'png' } })
+    expect(() => RenderOutputSchema.parse(r.structuredContent)).not.toThrow()
+    expect((r.structuredContent as Record<string, unknown>).png).toBeUndefined()
   })
   it('export_chart structuredContent conforms', async () => {
     const r = await client.callTool({ name: 'export_chart', arguments: { source: BAR } })

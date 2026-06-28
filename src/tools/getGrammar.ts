@@ -10,7 +10,7 @@ export const GetGrammarInputSchema = z.object({
 export type GetGrammarInput = z.infer<typeof GetGrammarInputSchema>
 
 export const GetGrammarOutputSchema = z.object({
-  section: SectionSchema.describe('The grammar section returned.'),
+  section: z.enum(['all', 'chart', 'properties', 'scenes', 'annotations']).describe('The grammar section returned.'),
   text: z.string().describe('The grammar reference as markdown.'),
 })
 

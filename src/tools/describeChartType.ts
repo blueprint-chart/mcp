@@ -29,7 +29,7 @@ export const DescribeChartTypeOutputSchema = z.object({
   })).describe('Supported chart properties.'),
   directives: z.array(z.object({
     name: z.string().describe('Directive name (e.g. highlight, annotation).'),
-    status: z.string().describe('Capability status for this chart type.'),
+    status: z.enum(['supported', 'not-implemented', 'inapplicable']).describe('Capability status for this chart type (CapabilityStatus).'),
     description: z.string().describe('What the directive does.'),
     note: z.string().optional().describe('Caveat or detail.'),
   })).describe('Supported directives.'),
