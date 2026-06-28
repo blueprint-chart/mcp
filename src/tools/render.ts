@@ -7,6 +7,15 @@ import { getPublicBaseUrl } from '../links/editorConfig'
 import { buildRenderUrls, type RenderUrls } from '../links/buildUrls'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 import { formatToolResult, type FormattedToolResult } from '../toolContent'
+import { FrameMetadataSchema, RenderUrlsSchema } from './outputSchemas'
+
+export const RenderOutputSchema = z.object({
+  frame: FrameMetadataSchema.describe('Frame metadata extracted from the chart.'),
+  mimeType: z.enum(['image/svg+xml', 'image/png', 'text/html']).describe('MIME type of the rendered output.'),
+  savedTo: z.string().optional().describe('Absolute path the output was written to, when `save` was used.'),
+  urls: RenderUrlsSchema.optional().describe('Stateless hosted render URLs (only when MCP_PUBLIC_URL is set).'),
+  urlsOmitted: z.literal('source-too-large').optional().describe('Set when URLs were omitted because the source exceeded the URL cap.'),
+})
 
 export const RenderInputSchema = z.object({
   source: z.string().describe('The .bpc chart source to render.'),
@@ -181,8 +190,13 @@ export async function renderTool(input: unknown): Promise<ToolResult<RenderOutpu
  * text block. Everything else falls through to the default text formatter.
  */
 export function renderToolContent(result: ToolResult<RenderOutput>): FormattedToolResult {
-  if (!result.ok || result.data.png === undefined) {
+  if (!result.ok) {
     return formatToolResult(result)
+  }
+  const { svg: _svg, png: _png, html: _html, modelVisible: _mv, ...meta } = result.data
+  if (result.data.png === undefined) {
+    // SVG / HTML: keep the existing text content from formatToolResult, override structuredContent.
+    return { ...formatToolResult(result), structuredContent: meta }
   }
   const { png, modelVisible, ...textPayload } = result.data
   return {
@@ -195,5 +209,6 @@ export function renderToolContent(result: ToolResult<RenderOutput>): FormattedTo
       },
       { type: 'text', text: JSON.stringify(textPayload, null, 2) },
     ],
+    structuredContent: meta,
   }
 }

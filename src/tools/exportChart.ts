@@ -6,6 +6,15 @@ import { extractFrameMetadata, type FrameMetadata } from '../render/frame'
 import { renderChart } from '../render/renderChart'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 import { formatToolResult, type FormattedToolResult } from '../toolContent'
+import { FrameMetadataSchema, RenderUrlsSchema } from './outputSchemas'
+
+export const ExportChartOutputSchema = z.object({
+  copyUrl: z.string().describe('Editor URL that opens an editable copy of the chart.'),
+  embedUrl: z.string().describe('Read-only iframe-embeddable URL.'),
+  frame: FrameMetadataSchema.describe('Frame metadata extracted from the chart.'),
+  urls: RenderUrlsSchema.optional().describe('Stateless hosted render URLs (only when MCP_PUBLIC_URL is set).'),
+  previewOmitted: z.literal(true).optional().describe('Set when the scene-0 preview render failed.'),
+})
 
 const PREVIEW_WIDTH = 800
 const PREVIEW_HEIGHT = 500
@@ -88,8 +97,13 @@ export async function exportChart(input: unknown): Promise<ToolResult<ExportChar
 
 /** PNG preview becomes the leading image block; base64 never enters the text. */
 export function exportChartContent(result: ToolResult<ExportChartOutput>): FormattedToolResult {
-  if (!result.ok || result.data.png === undefined) {
+  if (!result.ok) {
     return formatToolResult(result)
+  }
+  const { png: _png, modelVisible: _mv, ...meta } = result.data
+  if (result.data.png === undefined) {
+    // No preview: keep existing text content, override structuredContent with metadata only.
+    return { ...formatToolResult(result), structuredContent: meta }
   }
   const { png, modelVisible, ...textPayload } = result.data
   return {
@@ -102,5 +116,6 @@ export function exportChartContent(result: ToolResult<ExportChartOutput>): Forma
       },
       { type: 'text', text: JSON.stringify(textPayload, null, 2) },
     ],
+    structuredContent: meta,
   }
 }

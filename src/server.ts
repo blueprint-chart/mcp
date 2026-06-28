@@ -14,12 +14,12 @@ import { fileURLToPath } from 'node:url'
 import { validateDsl, ValidateInputSchema, ValidateOutputSchema } from './tools/validate'
 import { inspectDsl, InspectInputSchema, InspectOutputSchema } from './tools/inspect'
 import { recommendChartType, RecommendInputSchema, RecommendOutputSchema } from './tools/recommend'
-import { renderTool, RenderInputSchema, renderToolContent, type RenderOutput } from './tools/render'
+import { renderTool, RenderInputSchema, renderToolContent, RenderOutputSchema, type RenderOutput } from './tools/render'
 import { listChartTypes, ListChartTypesInputSchema, ListChartTypesOutputSchema } from './tools/listChartTypes'
 import { describeChartType, DescribeChartTypeInputSchema, DescribeChartTypeOutputSchema } from './tools/describeChartType'
 import { getExample, GetExampleInputSchema, GetExampleOutputSchema } from './tools/getExample'
 import { getGrammar, GetGrammarInputSchema, GetGrammarOutputSchema } from './tools/getGrammar'
-import { exportChart, ExportChartInputSchema, exportChartContent, type ExportChartOutput } from './tools/exportChart'
+import { exportChart, ExportChartInputSchema, exportChartContent, ExportChartOutputSchema, type ExportChartOutput } from './tools/exportChart'
 import { searchExamples, SearchExamplesInputSchema, SearchExamplesOutputSchema } from './tools/searchExamples'
 import { listPalettesTool, ListPalettesInputSchema, ListPalettesOutputSchema } from './tools/listPalettes'
 import { listResources, readResource } from './resources/index'
@@ -89,6 +89,7 @@ export const TOOLS: Record<string, ToolDef> = {
   render: {
     description: 'Render a .bpc source to SVG (default), PNG, or HTML. With format:"png" the chart comes back as an inline IMAGE you and the user can both see — render, look at the result, fix issues, re-render. Always returns structured frame metadata. When MCP_PUBLIC_URL is set the response includes stateless `urls` ({png,svg,bpc}). Set modelVisible:false to display the image to the user without spending model image tokens. Pass `save:<path>` to write the output into MCP_FS_WRITE_DIR instead of returning it inline. Width/height are capped at 1600; PNGs are rasterized at 2× for retina sharpness.',
     inputSchema: RenderInputSchema,
+    outputSchema: RenderOutputSchema,
     handler: args => renderTool(args),
     format: result => renderToolContent(result as ToolResult<RenderOutput>),
   },
@@ -131,6 +132,7 @@ export const TOOLS: Record<string, ToolDef> = {
   export_chart: {
     description: 'Turn a validated .bpc source into shareable URLs plus an inline visual preview of what was published. Returns { copyUrl, embedUrl, urls?, frame } and a scene-0 PNG image block so you can confirm the chart looks right before sharing. copyUrl opens an editable copy in the editor; embedUrl is a read-only iframe target; urls.{png,svg,bpc} (when MCP_PUBLIC_URL is set) are stateless rendered-image/source links. Set modelVisible:false to show the preview to the user only. Requires BLUEPRINT_CHART_EDITOR_URL; preview failures never block the export.',
     inputSchema: ExportChartInputSchema,
+    outputSchema: ExportChartOutputSchema,
     handler: args => exportChart(args),
     format: result => exportChartContent(result as ToolResult<ExportChartOutput>),
   },

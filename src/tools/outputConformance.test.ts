@@ -11,9 +11,12 @@ import { GetExampleOutputSchema } from './getExample'
 import { SearchExamplesOutputSchema } from './searchExamples'
 import { ListPalettesOutputSchema } from './listPalettes'
 import { GetGrammarOutputSchema } from './getGrammar'
+import { RenderOutputSchema } from './render'
+import { ExportChartOutputSchema } from './exportChart'
 
 let client: Client
 beforeAll(async () => {
+  process.env.BLUEPRINT_CHART_EDITOR_URL ??= 'https://blueprintchart.com'
   const server = createServer()
   const [c, s] = InMemoryTransport.createLinkedPair()
   client = new Client({ name: 't', version: '0' }, { capabilities: {} })
@@ -61,5 +64,18 @@ describe('output conformance: discovery/text tools', () => {
   it('get_grammar conforms', async () => {
     const r = await client.callTool({ name: 'get_grammar', arguments: {} })
     expect(() => GetGrammarOutputSchema.parse(r.structuredContent)).not.toThrow()
+  })
+})
+
+describe('output conformance: render and export_chart (custom formatters)', () => {
+  it('render structuredContent conforms (svg)', async () => {
+    const r = await client.callTool({ name: 'render', arguments: { source: BAR, format: 'svg' } })
+    expect(() => RenderOutputSchema.parse(r.structuredContent)).not.toThrow()
+    expect((r.structuredContent as Record<string, unknown>).svg).toBeUndefined()
+  })
+  it('export_chart structuredContent conforms', async () => {
+    const r = await client.callTool({ name: 'export_chart', arguments: { source: BAR } })
+    expect(() => ExportChartOutputSchema.parse(r.structuredContent)).not.toThrow()
+    expect((r.structuredContent as Record<string, unknown>).png).toBeUndefined()
   })
 })
