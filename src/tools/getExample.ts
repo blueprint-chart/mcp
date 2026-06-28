@@ -4,8 +4,8 @@ import { canonicalChartType } from '../dsl/chartTypes'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 
 export const GetExampleInputSchema = z.object({
-  chartType: z.string().optional(),
-  name: z.string().optional(),
+  chartType: z.string().optional().describe('Return the first canonical sample for this chart type (or alias).'),
+  name: z.string().optional().describe('Return a specific sample by its id, e.g. "co2-emissions".'),
 }).strict()
 export type GetExampleInput = z.infer<typeof GetExampleInputSchema>
 

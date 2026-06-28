@@ -5,7 +5,7 @@ import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 const SectionSchema = z.enum(['all', 'chart', 'properties', 'scenes', 'annotations']).default('all')
 
 export const GetGrammarInputSchema = z.object({
-  section: SectionSchema.optional(),
+  section: SectionSchema.optional().describe('Limit to one grammar section: "chart", "properties", "scenes", or "annotations". Omit (or "all") for the full grammar.'),
 }).strict()
 export type GetGrammarInput = z.infer<typeof GetGrammarInputSchema>
 

@@ -9,15 +9,13 @@ import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 import { formatToolResult, type FormattedToolResult } from '../toolContent'
 
 export const RenderInputSchema = z.object({
-  source: z.string(),
-  format: z.enum(['svg', 'png', 'html']).default('svg'),
-  scene: z.number().int().nonnegative().optional(),
-  width: z.number().int().positive().max(MAX_RENDER_DIMENSION).default(800),
-  height: z.number().int().positive().max(MAX_RENDER_DIMENSION).default(500),
-  /** When false, the inline PNG is marked audience:["user"] — displayed to the user but not fed to the model (token saver for bulk renders). */
-  modelVisible: z.boolean().default(true),
-  /** Optional file path for the output. Always resolved inside MCP_FS_WRITE_DIR: relative paths are joined to it, and absolute paths are re-anchored under it (e.g. `/tmp/x.png` → `<dir>/tmp/x.png`), so any value lands in the sandbox. When provided, the primary output (PNG bytes / SVG / HTML) is written there and the inline content is omitted from the response. Requires MCP_FS_WRITE_DIR to be set; only `../` traversal that escapes the directory is rejected. */
-  save: z.string().optional(),
+  source: z.string().describe('The .bpc chart source to render.'),
+  format: z.enum(['svg', 'png', 'html']).default('svg').describe('Output format. "svg" (default) and "html" return text; "png" returns an inline image you and the user can both see.'),
+  scene: z.number().int().nonnegative().optional().describe('Zero-based scene index to render, for charts that define scenes. Omit for the base chart (scene 0).'),
+  width: z.number().int().positive().max(MAX_RENDER_DIMENSION).default(800).describe('Output width in pixels (max 1600). PNGs are rasterized at 2x for retina sharpness.'),
+  height: z.number().int().positive().max(MAX_RENDER_DIMENSION).default(500).describe('Output height in pixels (max 1600).'),
+  modelVisible: z.boolean().default(true).describe('When false, the inline PNG is shown to the user but not sent to the model (saves image tokens on bulk renders).'),
+  save: z.string().optional().describe('Optional output path, always resolved inside MCP_FS_WRITE_DIR (relative paths are joined to it; absolute paths are re-anchored under it). When set, the output is written to disk and omitted from the response. Requires MCP_FS_WRITE_DIR.'),
 })
 export type RenderInput = z.infer<typeof RenderInputSchema>
 

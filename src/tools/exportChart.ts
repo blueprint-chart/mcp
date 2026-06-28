@@ -11,9 +11,8 @@ const PREVIEW_WIDTH = 800
 const PREVIEW_HEIGHT = 500
 
 export const ExportChartInputSchema = z.object({
-  source: z.string(),
-  /** When false, the preview image is marked audience:["user"]. */
-  modelVisible: z.boolean().default(true),
+  source: z.string().describe('The .bpc chart source to validate and publish to shareable URLs.'),
+  modelVisible: z.boolean().default(true).describe('When false, the preview image is shown to the user but not sent to the model.'),
 }).strict()
 export type ExportChartInput = z.infer<typeof ExportChartInputSchema>
 

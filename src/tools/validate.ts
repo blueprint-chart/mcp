@@ -31,7 +31,7 @@ function fromLibIssue(issue: LibValidationIssue): WarningIssue {
 }
 
 export const ValidateInputSchema = z.object({
-  source: z.string(),
+  source: z.string().describe('The .bpc chart source to parse and validate.'),
 })
 export type ValidateInput = z.infer<typeof ValidateInputSchema>
 

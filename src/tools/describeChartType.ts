@@ -10,7 +10,7 @@ import { publicDocUrl } from '../resources/docsReader'
 import { lookupCapability, statusOf, type CapabilityStatus } from '../dsl/capabilityMatrix'
 
 export const DescribeChartTypeInputSchema = z.object({
-  chartType: z.string(),
+  chartType: z.string().describe('A chart type or alias to describe, e.g. "bar-horizontal" or "line".'),
 }).strict()
 export type DescribeChartTypeInput = z.infer<typeof DescribeChartTypeInputSchema>
 

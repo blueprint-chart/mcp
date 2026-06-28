@@ -4,9 +4,9 @@ import { canonicalChartType } from '../dsl/chartTypes'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 
 export const SearchExamplesInputSchema = z.object({
-  query: z.string().optional(),
-  chartType: z.string().optional(),
-  limit: z.number().int().positive().max(20).optional(),
+  query: z.string().optional().describe('Topic keywords to match against sample titles and descriptions.'),
+  chartType: z.string().optional().describe('Restrict results to this chart type (or alias).'),
+  limit: z.number().int().positive().max(20).optional().describe('Maximum number of results to return (max 20).'),
 }).strict()
 export type SearchExamplesInput = z.infer<typeof SearchExamplesInputSchema>
 

@@ -6,7 +6,7 @@ import { toolOk, type ToolResult } from '../errors'
 import { looksLikeQuotedLabel } from '../dsl/dataKey'
 
 export const InspectInputSchema = z.object({
-  source: z.string(),
+  source: z.string().describe('The .bpc chart source to parse and summarize.'),
 })
 export type InspectInput = z.infer<typeof InspectInputSchema>
 

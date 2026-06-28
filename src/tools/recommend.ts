@@ -5,9 +5,9 @@ import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
 const ColumnTypeSchema = z.enum(['string', 'number', 'date'])
 
 export const RecommendInputSchema = z.object({
-  columnTypes: z.array(ColumnTypeSchema),
-  rowCount: z.number().int().nonnegative(),
-  goal: z.string().optional(),
+  columnTypes: z.array(ColumnTypeSchema).describe('The type of each data column, in order: "string", "number", or "date".'),
+  rowCount: z.number().int().nonnegative().describe('Number of data rows in the dataset.'),
+  goal: z.string().optional().describe('Optional prose sentence describing what the chart should show. Determines the chart family (comparison / ranking / part-to-whole / composition-over-time / trend / range).'),
 })
 export type RecommendInput = z.infer<typeof RecommendInputSchema>
 
