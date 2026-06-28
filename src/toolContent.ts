@@ -16,13 +16,17 @@ export interface ImageContent {
 
 export interface FormattedToolResult {
   content: Array<TextContent | ImageContent>
+  structuredContent?: unknown
   isError?: boolean
   [k: string]: unknown
 }
 
 export function formatToolResult<T>(result: ToolResult<T>): FormattedToolResult {
   if (result.ok) {
-    return { content: [{ type: 'text', text: JSON.stringify(result.data, null, 2) }] }
+    return {
+      content: [{ type: 'text', text: JSON.stringify(result.data, null, 2) }],
+      structuredContent: result.data as Record<string, unknown>,
+    }
   }
   return {
     isError: true,
