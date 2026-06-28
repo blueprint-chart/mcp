@@ -45,6 +45,7 @@ jobs:
       - run: make install
       - run: make build
       - name: Semantic Release
+        id: semantic
         uses: cycjimmy/semantic-release-action@v5
         with:
           dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
@@ -60,3 +61,25 @@ jobs:
           # OIDC trusted publishing does not satisfy (fails EINVALIDNPMTOKEN). Do not add it back.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
+
+      # Republish the MCP registry manifest after every real release so the
+      # registry version never drifts behind npm. server.json was bumped +
+      # committed by the prepareCmd/git steps above, so it already holds the
+      # released version here. Best-effort: a registry hiccup must not fail the
+      # release (npm publish already succeeded inside Semantic Release).
+      #
+      # Auth: GitHub Actions OIDC works for the `io.github.blueprint-chart/*`
+      # namespace (needs `id-token: write`, already granted above). No secret.
+      #
+      # TODO(one-time): confirm the mcp-publisher download asset name below
+      # against https://github.com/modelcontextprotocol/registry/releases.
+      # Asset naming can change. Step is continue-on-error so a wrong URL warns
+      # instead of breaking the release.
+      - name: Publish to MCP registry
+        if: ${{ steps.semantic.outputs.new_release_published == 'true' }}
+        continue-on-error: true
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
+            | tar xz mcp-publisher
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish

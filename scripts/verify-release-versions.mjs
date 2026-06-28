@@ -19,4 +19,18 @@ if (manifest.version !== expected) {
 }
 
 console.log(`OK  ${manifestPath}: ${manifest.version}`)
+
+// server.json (the MCP registry manifest) must track package.json or the
+// registry serves a stale version. Check both the top-level and per-package.
+const serverPath = 'server.json'
+const server = JSON.parse(readFileSync(serverPath, 'utf8'))
+const serverVersions = [server.version, ...(server.packages ?? []).map(p => p.version)]
+for (const v of serverVersions) {
+  if (v !== expected) {
+    console.error(`Version mismatch: ${serverPath}: version=${v}, expected=${expected}`)
+    exit(1)
+  }
+}
+console.log(`OK  ${serverPath}: ${server.version}`)
+
 console.log(`\n${manifest.name} at version ${expected} — matches tag ${tag}.`)
