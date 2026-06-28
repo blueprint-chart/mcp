@@ -4,6 +4,7 @@ import { parseDsl } from '../parse'
 import { validateAst, type ValidationIssue } from '../dsl/validate'
 import { collectWarnings, type WarningIssue } from '../dsl/semanticWarnings'
 import { toolOk, type ToolResult } from '../errors'
+import { IssueSchema } from './outputSchemas'
 
 // lib validateChart codes whose intent is already covered by the MCP's own
 // structural checks (validateAst). We drop these to avoid double-reporting and
@@ -34,6 +35,12 @@ export const ValidateInputSchema = z.object({
   source: z.string().describe('The .bpc chart source to parse and validate.'),
 })
 export type ValidateInput = z.infer<typeof ValidateInputSchema>
+
+export const ValidateOutputSchema = z.object({
+  valid: z.boolean().describe('True when the source parses and passes semantic validation.'),
+  errors: z.array(IssueSchema).describe('Fatal structural and value-level errors.'),
+  warnings: z.array(IssueSchema).describe('Non-fatal advisories.'),
+})
 
 export interface ValidateOutput {
   valid: boolean

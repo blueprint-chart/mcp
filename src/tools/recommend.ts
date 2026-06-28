@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { recommendCharts, type ChartRecommendation } from '@blueprint-chart/lib'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
+import { ChartRecommendationSchema } from './outputSchemas'
 
 const ColumnTypeSchema = z.enum(['string', 'number', 'date'])
 
@@ -10,6 +11,11 @@ export const RecommendInputSchema = z.object({
   goal: z.string().optional().describe('Optional prose sentence describing what the chart should show. Determines the chart family (comparison / ranking / part-to-whole / composition-over-time / trend / range).'),
 })
 export type RecommendInput = z.infer<typeof RecommendInputSchema>
+
+export const RecommendOutputSchema = z.object({
+  recommendations: z.array(ChartRecommendationSchema).describe('Ranked chart-type recommendations, best first.'),
+  guidance: z.string().optional().describe('Prose next-step guidance for the top recommendation.'),
+})
 
 export interface RecommendOutput {
   recommendations: ChartRecommendation[]

@@ -10,6 +10,29 @@ export const InspectInputSchema = z.object({
 })
 export type InspectInput = z.infer<typeof InspectInputSchema>
 
+const SceneSummarySchema = z.object({
+  index: z.number().int().describe('Zero-based scene index.'),
+  name: z.string().optional().describe('Scene name, if named.'),
+  hasTransition: z.boolean().describe('Whether the scene defines transforms.'),
+})
+const DataSummarySchema = z.object({
+  rowCount: z.number().int().describe('Number of data rows.'),
+  entryCount: z.number().int().describe('Total data-block entries (rows plus directives like series).'),
+  labels: z.array(z.string()).describe('Row labels in source order.'),
+  seriesNames: z.array(z.string()).describe('Series names for multi-series charts.'),
+  multiSeries: z.boolean().describe('True when the data declares multiple series.'),
+})
+export const InspectOutputSchema = z.object({
+  chartType: z.string().describe('Declared chart type.'),
+  scenes: z.array(SceneSummarySchema).describe('Per-scene summaries (always at least one).'),
+  data: DataSummarySchema.describe('Summary of the data block.'),
+  hasAnnotations: z.boolean().describe('Whether any annotation/range/note is present.'),
+  hasColorizes: z.boolean().describe('Whether any non-highlight colorize is present.'),
+  hasHighlights: z.boolean().describe('Whether any highlight is present.'),
+  hasAreaFills: z.boolean().describe('Whether any area-fill is present.'),
+  seriesCount: z.number().int().describe('Number of series.'),
+})
+
 export interface SceneSummary {
   index: number
   name?: string

@@ -11,9 +11,9 @@ import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validateDsl, ValidateInputSchema } from './tools/validate'
-import { inspectDsl, InspectInputSchema } from './tools/inspect'
-import { recommendChartType, RecommendInputSchema } from './tools/recommend'
+import { validateDsl, ValidateInputSchema, ValidateOutputSchema } from './tools/validate'
+import { inspectDsl, InspectInputSchema, InspectOutputSchema } from './tools/inspect'
+import { recommendChartType, RecommendInputSchema, RecommendOutputSchema } from './tools/recommend'
 import { renderTool, RenderInputSchema, renderToolContent, type RenderOutput } from './tools/render'
 import { listChartTypes, ListChartTypesInputSchema } from './tools/listChartTypes'
 import { describeChartType, DescribeChartTypeInputSchema } from './tools/describeChartType'
@@ -71,16 +71,19 @@ export const TOOLS: Record<string, ToolDef> = {
   validate_dsl: {
     description: 'Parse and semantically validate a .bpc source. Returns { valid, errors[], warnings[] }. Errors include unknown chart types, unknown properties, and empty data blocks with nearest-neighbour suggestions.',
     inputSchema: ValidateInputSchema,
+    outputSchema: ValidateOutputSchema,
     handler: args => validateDsl(args as { source: string }),
   },
   inspect_dsl: {
     description: 'Parse a .bpc source and return a structured summary: chartType, scenes, data (rowCount, entryCount, labels, seriesNames, multiSeries), annotation/colorize/highlight/area-fill presence flags, series count.',
     inputSchema: InspectInputSchema,
+    outputSchema: InspectOutputSchema,
     handler: args => inspectDsl(args as { source: string }),
   },
   recommend_chart_type: {
     description: 'Start here before writing any .bpc. Takes column types, row count, and the user\'s goal (a prose sentence — it determines the chart family: comparison/ranking/part-to-whole/composition-over-time/trend/range). Returns ranked chart-type recommendations plus guidance.',
     inputSchema: RecommendInputSchema,
+    outputSchema: RecommendOutputSchema,
     handler: args => recommendChartType(args),
   },
   render: {
