@@ -14,6 +14,7 @@
 |   **Release date** | [![Release date](https://img.shields.io/github/release-date/blueprint-chart/mcp?style=flat-square&color=success)](https://github.com/blueprint-chart/mcp/releases/latest) |
 |    **Open issues** | [![Open issues](https://img.shields.io/github/issues/blueprint-chart/mcp?style=flat-square&color=success)](https://github.com/blueprint-chart/mcp/issues/) |
 |  **Websites** | [![Editor](https://img.shields.io/badge/Editor-2563A0?style=flat-square)](https://blueprintchart.com) [![Docs](https://img.shields.io/badge/Docs-2563A0?style=flat-square)](https://docs.blueprintchart.com) |
+|    **Smithery** | [![smithery badge](https://smithery.ai/badge/blueprint-chart/remote)](https://smithery.ai/servers/blueprint-chart/remote) |
 
 </div>
 
