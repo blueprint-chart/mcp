@@ -85,6 +85,14 @@ describe('server', () => {
     }
   })
 
+  it('every tool declares an object-type outputSchema', async () => {
+    const r = await (await connectInMemory()).client.listTools()
+    expect(r.tools.length).toBe(11)
+    for (const t of r.tools) {
+      expect(t.outputSchema, `missing outputSchema: ${t.name}`).toMatchObject({ type: 'object' })
+    }
+  })
+
   it('calls validate_dsl successfully for a sample', async () => {
     const { client } = await connectInMemory()
     const r = await client.callTool({
