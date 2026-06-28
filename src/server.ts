@@ -7,6 +7,7 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
+import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -125,6 +126,25 @@ export const TOOLS: Record<string, ToolDef> = {
   },
 }
 
+// MCP tool annotations: a human-readable title plus behavior hints. Every tool
+// here is deterministic and operates only on its input + bundled docs/samples
+// (no network, no open world). `render` is the only one that can write to disk
+// (via `save`), so it is the only non-read-only tool.
+const READ_ONLY: ToolAnnotations = { readOnlyHint: true, idempotentHint: true, openWorldHint: false }
+const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
+  validate_dsl: { title: 'Validate .bpc', ...READ_ONLY },
+  inspect_dsl: { title: 'Inspect .bpc', ...READ_ONLY },
+  recommend_chart_type: { title: 'Recommend chart type', ...READ_ONLY },
+  render: { title: 'Render chart', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  list_chart_types: { title: 'List chart types', ...READ_ONLY },
+  describe_chart_type: { title: 'Describe chart type', ...READ_ONLY },
+  get_example: { title: 'Get example chart', ...READ_ONLY },
+  search_examples: { title: 'Search examples', ...READ_ONLY },
+  list_palettes: { title: 'List palettes', ...READ_ONLY },
+  get_grammar: { title: 'Get DSL grammar', ...READ_ONLY },
+  export_chart: { title: 'Export chart', ...READ_ONLY },
+}
+
 export function createServer(): Server {
   const icons = buildServerIcons()
   const server = new Server(
@@ -144,6 +164,7 @@ export function createServer(): Server {
       name,
       description: def.description,
       inputSchema: zodToJsonSchema(def.inputSchema),
+      ...(TOOL_ANNOTATIONS[name] && { annotations: TOOL_ANNOTATIONS[name] }),
     })),
   }))
 
