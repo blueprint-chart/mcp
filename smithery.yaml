@@ -1,0 +1,15 @@
+# Smithery server descriptor — https://smithery.ai/docs
+#
+# Blueprint Chart's MCP server needs NO configuration: no API key, no account,
+# no env vars required (editor/docs URLs default to the public site). Smithery
+# runs the published npm package over stdio via npx — nothing to host.
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+    required: []
+    additionalProperties: false
+  commandFunction: |-
+    (config) => ({ command: 'npx', args: ['-y', '@blueprint-chart/mcp'] })
+  exampleConfig: {}
