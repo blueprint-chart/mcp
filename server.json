@@ -3,7 +3,7 @@
   "name": "io.github.blueprint-chart/mcp",
   "title": "Blueprint Chart",
   "description": "The open chart format an LLM writes and the browser renders — to interactive, accessible SVG.",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "websiteUrl": "https://blueprintchart.com",
   "repository": {
     "url": "https://github.com/blueprint-chart/mcp",
@@ -13,7 +13,7 @@
     {
       "registryType": "npm",
       "identifier": "@blueprint-chart/mcp",
-      "version": "0.1.9",
+      "version": "0.2.0",
       "transport": {
         "type": "stdio"
       }
