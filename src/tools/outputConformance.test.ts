@@ -81,7 +81,28 @@ describe('output conformance: render and export_chart (custom formatters)', () =
   it('render structuredContent conforms (svg)', async () => {
     const r = await client.callTool({ name: 'render', arguments: { source: BAR, format: 'svg' } })
     expect(() => RenderOutputSchema.parse(r.structuredContent)).not.toThrow()
-    expect((r.structuredContent as Record<string, unknown>).svg).toBeUndefined()
+    expect((r.structuredContent as Record<string, unknown>).svg).toMatch(/^<svg/)
+  })
+
+  it('render returns the html markup, not just its metadata', async () => {
+    const r = await client.callTool({ name: 'render', arguments: { source: BAR, format: 'html' } })
+    expect(() => RenderOutputSchema.parse(r.structuredContent)).not.toThrow()
+    expect((r.structuredContent as Record<string, unknown>).html).toContain('<svg')
+  })
+
+  it('render omits the image block when modelVisible is false', async () => {
+    const r = await client.callTool({ name: 'render', arguments: { source: BAR, format: 'png', modelVisible: false } })
+    expect((r.content as Array<{ type: string }>).map(c => c.type)).toEqual(['text'])
+  })
+
+  it('render still sends the image block by default', async () => {
+    const r = await client.callTool({ name: 'render', arguments: { source: BAR, format: 'png' } })
+    expect((r.content as Array<{ type: string }>).map(c => c.type)).toEqual(['image', 'text'])
+  })
+
+  it('export_chart omits the preview image block when modelVisible is false', async () => {
+    const r = await client.callTool({ name: 'export_chart', arguments: { source: BAR, modelVisible: false } })
+    expect((r.content as Array<{ type: string }>).map(c => c.type)).toEqual(['text'])
   })
   it('render structuredContent conforms (png)', async () => {
     const r = await client.callTool({ name: 'render', arguments: { source: BAR, format: 'png' } })

@@ -6,10 +6,12 @@ import { MAX_RENDER_DIMENSION, renderChart } from '../render/renderChart'
 import { getPublicBaseUrl } from '../links/editorConfig'
 import { buildRenderUrls, type RenderUrls } from '../links/buildUrls'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
-import { formatToolResult, type FormattedToolResult } from '../toolContent'
+import { formatWithPngPreview, type FormattedToolResult } from '../toolContent'
 import { FrameMetadataSchema, RenderUrlsSchema } from './outputSchemas'
 
 export const RenderOutputSchema = z.object({
+  svg: z.string().optional().describe('SVG markup, when format is "svg" and `save` was not used.'),
+  html: z.string().optional().describe('HTML markup, when format is "html" and `save` was not used.'),
   frame: FrameMetadataSchema.describe('Frame metadata extracted from the chart.'),
   mimeType: z.enum(['image/svg+xml', 'image/png', 'text/html']).describe('MIME type of the rendered output.'),
   savedTo: z.string().optional().describe('Absolute path the output was written to, when `save` was used.'),
@@ -23,7 +25,7 @@ export const RenderInputSchema = z.object({
   scene: z.number().int().nonnegative().optional().describe('Zero-based scene index to render, for charts that define scenes. Omit for the base chart (scene 0).'),
   width: z.number().int().positive().max(MAX_RENDER_DIMENSION).default(800).describe('Output width in pixels (max 1600). PNGs are rasterized at 2x for retina sharpness.'),
   height: z.number().int().positive().max(MAX_RENDER_DIMENSION).default(500).describe('Output height in pixels (max 1600).'),
-  modelVisible: z.boolean().default(true).describe('When false, the inline PNG is shown to the user but not sent to the model (saves image tokens on bulk renders).'),
+  modelVisible: z.boolean().default(true).describe('When false, the inline PNG is omitted from the response so it costs no image tokens; use it for bulk renders, with `urls.png` or `save` to reach the image.'),
   save: z.string().optional().describe('Optional output path, always resolved inside MCP_FS_WRITE_DIR (relative paths are joined to it; absolute paths are re-anchored under it). When set, the output is written to disk and omitted from the response. Requires MCP_FS_WRITE_DIR.'),
 })
 export type RenderInput = z.infer<typeof RenderInputSchema>
@@ -187,28 +189,9 @@ export async function renderTool(input: unknown): Promise<ToolResult<RenderOutpu
 /**
  * Content formatter for the TOOLS registry — colocated with the tool. PNG
  * results become [image block, text metadata]; the base64 NEVER enters the
- * text block. Everything else falls through to the default text formatter.
+ * text block. SVG and HTML markup travel in both the text and the structured
+ * content, since that is the payload a caller asked for.
  */
 export function renderToolContent(result: ToolResult<RenderOutput>): FormattedToolResult {
-  if (!result.ok) {
-    return formatToolResult(result)
-  }
-  const { svg: _svg, png: _png, html: _html, modelVisible: _mv, ...meta } = result.data
-  if (result.data.png === undefined) {
-    // SVG / HTML: keep the existing text content from formatToolResult, override structuredContent.
-    return { ...formatToolResult(result), structuredContent: meta }
-  }
-  const { png, modelVisible, ...textPayload } = result.data
-  return {
-    content: [
-      {
-        type: 'image',
-        data: png,
-        mimeType: 'image/png',
-        ...(modelVisible === false ? { annotations: { audience: ['user' as const] } } : {}),
-      },
-      { type: 'text', text: JSON.stringify(textPayload, null, 2) },
-    ],
-    structuredContent: meta,
-  }
+  return formatWithPngPreview(result)
 }

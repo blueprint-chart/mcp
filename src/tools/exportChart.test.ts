@@ -84,11 +84,12 @@ describe('export preview', () => {
     expect((formatted.content[1] as { text: string }).text).toContain('copyUrl')
   })
 
-  it('modelVisible:false adds the user-audience annotation to the preview', async () => {
+  it('modelVisible:false drops the preview image block so it costs no tokens', async () => {
     process.env.BLUEPRINT_CHART_EDITOR_URL = 'https://blueprintchart.com'
     const result = await exportChart({ source: VALID, modelVisible: false })
     const formatted = exportChartContent(result)
-    expect(formatted.content[0]).toMatchObject({ annotations: { audience: ['user'] } })
+    expect(formatted.content).toHaveLength(1)
+    expect(formatted.content[0]).toMatchObject({ type: 'text' })
   })
 
   it('degrades to URLs-only when the preview render fails', async () => {

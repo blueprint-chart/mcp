@@ -87,7 +87,7 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: args => recommendChartType(args),
   },
   render: {
-    description: 'Render a .bpc source to SVG (default), PNG, or HTML. With format:"png" the chart comes back as an inline IMAGE you and the user can both see — render, look at the result, fix issues, re-render. Always returns structured frame metadata. When MCP_PUBLIC_URL is set the response includes stateless `urls` ({png,svg,bpc}). Set modelVisible:false to display the image to the user without spending model image tokens. Pass `save:<path>` to write the output into MCP_FS_WRITE_DIR instead of returning it inline. Width/height are capped at 1600; PNGs are rasterized at 2× for retina sharpness.',
+    description: 'Render a .bpc source to SVG (default), PNG, or HTML. With format:"png" the chart comes back as an inline IMAGE you and the user can both see — render, look at the result, fix issues, re-render. Always returns structured frame metadata. When MCP_PUBLIC_URL is set the response includes stateless `urls` ({png,svg,bpc}). Set modelVisible:false to drop the inline image from the response entirely, spending no image tokens (reach the image via `urls.png` or `save`). Pass `save:<path>` to write the output into MCP_FS_WRITE_DIR instead of returning it inline. Width/height are capped at 1600; PNGs are rasterized at 2× for retina sharpness.',
     inputSchema: RenderInputSchema,
     outputSchema: RenderOutputSchema,
     handler: args => renderTool(args),
@@ -130,7 +130,7 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: args => getGrammar(args),
   },
   export_chart: {
-    description: 'Turn a validated .bpc source into shareable URLs plus an inline visual preview of what was published. Returns { copyUrl, embedUrl, urls?, frame } and a scene-0 PNG image block so you can confirm the chart looks right before sharing. copyUrl opens an editable copy in the editor; embedUrl is a read-only iframe target; urls.{png,svg,bpc} (when MCP_PUBLIC_URL is set) are stateless rendered-image/source links. Set modelVisible:false to show the preview to the user only. Requires BLUEPRINT_CHART_EDITOR_URL; preview failures never block the export.',
+    description: 'Turn a validated .bpc source into shareable URLs plus an inline visual preview of what was published. Returns { copyUrl, embedUrl, urls?, frame } and a scene-0 PNG image block so you can confirm the chart looks right before sharing. copyUrl opens an editable copy in the editor; embedUrl is a read-only iframe target; urls.{png,svg,bpc} (when MCP_PUBLIC_URL is set) are stateless rendered-image/source links. Set modelVisible:false to drop the inline preview from the response entirely, spending no image tokens. Requires BLUEPRINT_CHART_EDITOR_URL; preview failures never block the export.',
     inputSchema: ExportChartInputSchema,
     outputSchema: ExportChartOutputSchema,
     handler: args => exportChart(args),

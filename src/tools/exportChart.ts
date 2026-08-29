@@ -5,7 +5,7 @@ import { validatePipeline } from '../render/validatePipeline'
 import { extractFrameMetadata, type FrameMetadata } from '../render/frame'
 import { renderChart } from '../render/renderChart'
 import { ErrorCode, toolError, toolOk, type ToolResult } from '../errors'
-import { formatToolResult, type FormattedToolResult } from '../toolContent'
+import { formatWithPngPreview, type FormattedToolResult } from '../toolContent'
 import { FrameMetadataSchema, RenderUrlsSchema } from './outputSchemas'
 
 export const ExportChartOutputSchema = z.object({
@@ -21,7 +21,7 @@ const PREVIEW_HEIGHT = 500
 
 export const ExportChartInputSchema = z.object({
   source: z.string().describe('The .bpc chart source to validate and publish to shareable URLs.'),
-  modelVisible: z.boolean().default(true).describe('When false, the preview image is shown to the user but not sent to the model.'),
+  modelVisible: z.boolean().default(true).describe('When false, the preview image is omitted from the response so it costs no image tokens.'),
 }).strict()
 export type ExportChartInput = z.infer<typeof ExportChartInputSchema>
 
@@ -97,25 +97,5 @@ export async function exportChart(input: unknown): Promise<ToolResult<ExportChar
 
 /** PNG preview becomes the leading image block; base64 never enters the text. */
 export function exportChartContent(result: ToolResult<ExportChartOutput>): FormattedToolResult {
-  if (!result.ok) {
-    return formatToolResult(result)
-  }
-  const { png: _png, modelVisible: _mv, ...meta } = result.data
-  if (result.data.png === undefined) {
-    // No preview: keep existing text content, override structuredContent with metadata only.
-    return { ...formatToolResult(result), structuredContent: meta }
-  }
-  const { png, modelVisible, ...textPayload } = result.data
-  return {
-    content: [
-      {
-        type: 'image',
-        data: png,
-        mimeType: 'image/png',
-        ...(modelVisible === false ? { annotations: { audience: ['user' as const] } } : {}),
-      },
-      { type: 'text', text: JSON.stringify(textPayload, null, 2) },
-    ],
-    structuredContent: meta,
-  }
+  return formatWithPngPreview(result)
 }

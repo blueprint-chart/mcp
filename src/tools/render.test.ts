@@ -295,15 +295,17 @@ describe('render png content blocks', () => {
     expect(text).not.toContain((result as { data: { png: string } }).data.png.slice(0, 40))
   })
 
-  it('modelVisible:false adds the user-audience annotation', async () => {
+  it('modelVisible:false drops the image block so it costs no tokens', async () => {
     const result = await renderTool({ source: VALID, format: 'png', modelVisible: false })
     const formatted = renderToolContent(result)
-    expect(formatted.content[0]).toMatchObject({ annotations: { audience: ['user'] } })
+    expect(formatted.content).toHaveLength(1)
+    expect(formatted.content[0]).toMatchObject({ type: 'text' })
   })
 
-  it('svg/html/error results format as a single text block', async () => {
+  it('svg/html/error results format as a single text block carrying the markup', async () => {
     const svgResult = await renderTool({ source: VALID, format: 'svg' })
     expect(renderToolContent(svgResult).content).toHaveLength(1)
+    expect(renderToolContent(svgResult).structuredContent).toMatchObject({ svg: expect.stringMatching(/^<svg/) })
     const errResult = await renderTool({ source: 'chart nope {' })
     expect(renderToolContent(errResult).isError).toBe(true)
   })
