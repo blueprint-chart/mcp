@@ -49,11 +49,18 @@ jobs:
         uses: cycjimmy/semantic-release-action@v5
         with:
           dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+          # semantic_version pins the release runtime to the major this repo
+          # declares; the action otherwise runs its own bundled 24. The preset
+          # is pinned to 9 rather than 10 on purpose: preset 10.3+ plants a
+          # mainTemplate that makes conventional-changelog-writer@8 throw
+          # 'Missing helper', and no stable @semantic-release/release-notes-generator
+          # ships writer 9 (14.1.1 pins writer ^8), so preset 10 cannot render here.
+          semantic_version: 25
           extra_plugins: |
             @semantic-release/changelog
             @semantic-release/exec
             @semantic-release/git
-            conventional-changelog-conventionalcommits
+            conventional-changelog-conventionalcommits@9
         env:
           # npm auth is via OIDC trusted publishing (id-token: write above): publish runs
           # `pnpm publish --provenance` via @semantic-release/exec. NOTE: @semantic-release/npm
