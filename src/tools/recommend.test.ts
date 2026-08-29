@@ -99,7 +99,7 @@ describe('recommend_chart_type', () => {
     if (r.ok) {
       const top = r.data.recommendations[0]!.chartType
       expect(r.data.guidance).toContain(`Use '${top}'`)
-      expect(r.data.guidance).toContain(`describe_chart_type({ name: '${top}' })`)
+      expect(r.data.guidance).toContain(`describe_chart_type({ chartType: '${top}' })`)
       expect(r.data.guidance).toMatch(/Restraint:/)
       expect(r.data.guidance).not.toMatch(/pass the user's goal/i)
     }

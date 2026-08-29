@@ -2,7 +2,9 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { parse, validateChart } from '@blueprint-chart/lib'
-import { createServer } from '../server'
+import { createServer, TOOLS } from '../server'
+import { authorChartPrompt } from '../prompts/authorChart'
+import { zodToJsonSchema } from '../lib/zodToJsonSchema'
 import { listCanonicalChartTypes } from '../dsl/chartTypes'
 import type { DescribeChartTypeOutput } from './describeChartType'
 import { ValidateOutputSchema } from './validate'
@@ -123,5 +125,45 @@ describe('guidance conformance: describe_chart_type property tables', () => {
     const body = properties.map(p => `  ${p.key} = "x"`).join('\n')
     const errors = validateChart(parse(`chart ${chartType} {\n${body}\n  data { "A" = 1 }\n}`)).errors
     expect(errors.filter(e => e.code === 'unknown-property').map(e => e.path)).toEqual([])
+  })
+})
+
+/**
+ * Every `tool_name({ key: ... })` a model-facing string spells out, paired with
+ * the keys that tool's input schema actually accepts. Nothing type-checks these
+ * strings, so a wrong parameter name ships as working documentation.
+ */
+function unacceptedParams(text: string): string[] {
+  const bad: string[] = []
+  for (const [, tool, args] of text.matchAll(/\b([a-z_]+)\(\{([^}]*)\}\)/g)) {
+    const def = TOOLS[tool!]
+    if (!def) {
+      continue
+    }
+    const schema = zodToJsonSchema(def.inputSchema) as { properties?: Record<string, unknown> }
+    const accepted = Object.keys(schema.properties ?? {})
+    for (const raw of args!.split(',')) {
+      const key = raw.split(':')[0]!.trim().replace(/[?"']/g, '')
+      if (key !== '' && !accepted.includes(key)) {
+        bad.push(`${tool}({ ${key} }) — accepts ${accepted.join(', ')}`)
+      }
+    }
+  }
+  return bad
+}
+
+describe('guidance conformance: tool-call examples name real parameters', () => {
+  it.each(Object.keys(TOOLS))('%s description', (name) => {
+    expect(unacceptedParams(TOOLS[name]!.description)).toEqual([])
+  })
+
+  it('the author_chart prompt', () => {
+    expect(unacceptedParams(authorChartPrompt().messages[0]!.content.text)).toEqual([])
+  })
+
+  it('recommend_chart_type guidance', async () => {
+    const r = await client.callTool({ name: 'recommend_chart_type', arguments: { columnTypes: ['string', 'number'], rowCount: 6, goal: 'compare countries' } })
+    const { guidance } = r.structuredContent as { guidance: string }
+    expect(unacceptedParams(guidance)).toEqual([])
   })
 })

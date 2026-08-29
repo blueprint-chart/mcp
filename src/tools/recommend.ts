@@ -33,7 +33,7 @@ function buildGuidance(recommendations: ChartRecommendation[], goal: string | un
   if (!top) {
     return undefined
   }
-  const core = `Use '${top.chartType}' unless the user asked for a different type or your reading of the data clearly contradicts it (say why if you override). Next: describe_chart_type({ name: '${top.chartType}' }). ${RESTRAINT_NOTE}`
+  const core = `Use '${top.chartType}' unless the user asked for a different type or your reading of the data clearly contradicts it (say why if you override). Next: describe_chart_type({ chartType: '${top.chartType}' }). ${RESTRAINT_NOTE}`
   if (goal === undefined || goal.trim() === '') {
     return `${GOAL_TIP} ${core}`
   }

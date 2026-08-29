@@ -2,7 +2,7 @@ const BODY = `You are authoring a Blueprint Chart (\`.bpc\`) file for a user.
 
 Workflow:
 1. **Always start with \`recommend_chart_type({ columnTypes, rowCount, goal })\`.** Pass the user's goal/finding verbatim — do not paraphrase or summarize it. The goal decides the chart family (comparison / ranking / part-to-whole / composition-over-time / trend / range), and paraphrasing drops the words that decide it. Trust the top recommendation unless the user explicitly named a chart type or your own reading of the data clearly contradicts it — if you override, say why.
-2. Call \`describe_chart_type({ name: "<recommended type>" })\` for properties, when-to-use, and a data-shape example.
+2. Call \`describe_chart_type({ chartType: "<recommended type>" })\` for properties, when-to-use, and a data-shape example.
 3. Call \`get_example({ chartType: "<recommended type>" })\` (or \`{ name: "<sample-id>" }\`) to copy a canonical .bpc as a starting point.
 4. Write the \`.bpc\` source — minimal first: a title that states the finding, a description, the data, and metadata.
 5. Call \`validate_dsl\` — read \`errors[]\`: each entry has \`code\`, \`message\`, \`suggestion\`. Fix and retry.
@@ -26,7 +26,7 @@ Resources you can read (if your client supports MCP resources):
 
 Tools:
 - \`recommend_chart_type({columnTypes, rowCount, goal})\` — START HERE: ranked chart-type suggestions plus guidance; the goal decides the family
-- \`describe_chart_type({name})\` — properties, when-to-use, data-shape for one chart type (tool equivalent of \`bpc://chart-types/{slug}\`)
+- \`describe_chart_type({chartType})\` — properties, when-to-use, data-shape for one chart type (tool equivalent of \`bpc://chart-types/{slug}\`)
 - \`get_example({chartType?, name?})\` — fetch a canonical \`.bpc\` sample (tool equivalent of \`bpc://samples/{id}\`)
 - \`validate_dsl({source})\` — parse; returns \`{ valid, errors[], warnings[] }\` — each error has \`code\`, \`message\`, \`suggestion\`
 - \`inspect_dsl({source})\` — parsed summary: \`chartType\`, \`scenes\`, \`seriesCount\`, \`rowCount\`, \`hasHighlights\`, \`hasColorizes\`, etc.
