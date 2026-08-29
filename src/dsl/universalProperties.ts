@@ -1,3 +1,5 @@
+import { listThemes } from '@blueprint-chart/lib'
+
 /**
  * Metadata for a universal chart property (type, description, and optional
  * choice list). Consumed by `describeChartType` to build the properties list.
@@ -9,13 +11,14 @@ export interface UniversalPropertyMeta {
 }
 
 /**
- * Static metadata for universal properties that are consumed by astToDefinition
- * directly rather than registered per chart type via getChartOptions. These
- * appear in chart DSL across all chart types (e.g. sort, title, colors).
+ * Chart properties the library reads from its frame and layout code instead of
+ * registering per chart type, so they are absent from `getChartOptions` yet
+ * valid on every chart. Mirrors the library's own frame-key allowlist, minus
+ * the editor player chrome and the scene-level `type` switch.
  *
- * This is the single source of truth for both the metadata and the membership
- * of the universal-properties set. `UNIVERSAL_PROPERTIES` is derived from the
- * keys of this object so the two cannot drift apart.
+ * Anything `getChartOptions` already registers belongs there and must not be
+ * repeated here: the axis, grid and value-label families are per-type options,
+ * and listing them here advertised axis properties on pie and donut.
  */
 export const UNIVERSAL_PROPERTY_META: Readonly<Record<string, UniversalPropertyMeta>> = {
   // Attribution metadata
@@ -30,37 +33,27 @@ export const UNIVERSAL_PROPERTY_META: Readonly<Record<string, UniversalPropertyM
   sort: { type: 'select', description: 'Sort direction for categories', choices: ['ascending', 'descending', 'none'] },
   sortMode: { type: 'select', description: 'Sort mode for grouped/stacked charts', choices: ['total', 'within-groups', 'none'] },
 
-  // Theme + palette (apply to every chart type)
-  theme: { type: 'text', description: 'Visual theme name' },
-  colorPalette: { type: 'text', description: 'Named color palette' },
-  colors: { type: 'colors', description: 'Custom color list' },
-
-  // Frame / layout
+  // Frame
+  theme: { type: 'select', description: 'Visual theme name', choices: listThemes().map(t => t.name) },
   padding: { type: 'text', description: 'Frame padding (CSS shorthand)' },
-  background: { type: 'text', description: 'Background color' },
-  frameSizing: { type: 'select', description: 'Frame sizing mode', choices: ['auto', 'standard', 'aspect-ratio'] },
-  aspectRatio: { type: 'text', description: 'Aspect ratio (width / height)' },
+  transparentBackground: { type: 'boolean', description: 'Draw the chart without the frame background' },
 
-  // Value-label toggles (shared across bar/column variants but used universally
-  // in samples; per-type registry overrides when stricter)
-  valueLabels: { type: 'boolean', description: 'Show value labels on bars/segments' },
-  verticalLabelPosition: { type: 'select', description: 'Vertical axis label position', choices: ['auto', 'inside', 'outside', 'off'] },
-  horizontalLabelPosition: { type: 'select', description: 'Horizontal axis label position', choices: ['auto', 'inside', 'outside', 'off'] },
-  verticalGridStyle: { type: 'select', description: 'Vertical grid line style', choices: ['solid', 'dashed', 'dotted', 'none'] },
-  horizontalGridStyle: { type: 'select', description: 'Horizontal grid line style', choices: ['solid', 'dashed', 'dotted', 'none'] },
-
-  // TODO(lib): expose heightMode on area-stacked via getChartOptions
-  heightMode: { type: 'text', description: 'Height mode for stacked area charts' },
+  // Layout. `sizing` takes the DSL vocabulary, which is deliberately not the
+  // renderer's FrameSizing names: `sizing = standard` is not valid DSL.
+  sizing: { type: 'select', description: 'How the frame sizes itself horizontally', choices: ['responsive', 'fixed', 'max-width'] },
+  fixedWidth: { type: 'text', description: 'Frame width in pixels, when sizing is "fixed"' },
+  maxWidth: { type: 'text', description: 'Maximum frame width in pixels, when sizing is "max-width"' },
+  heightMode: { type: 'select', description: 'How the frame height is decided', choices: ['auto', 'fixed', 'aspect-ratio'] },
+  fixedHeight: { type: 'text', description: 'Frame height in pixels, when heightMode is "fixed"' },
+  aspectRatio: { type: 'text', description: 'Aspect ratio (width / height), when heightMode is "aspect-ratio"' },
 }
 
 /**
  * Property keys recognized at the chart top level regardless of chart type.
  *
  * Derived from the keys of UNIVERSAL_PROPERTY_META to keep membership and
- * metadata in lockstep. If a new universal property is added to the lib,
- * add it to UNIVERSAL_PROPERTY_META above. The sample-roundtrip test (added
- * in Task 6) catches drift: if a sample uses a key we don't know about, the
- * validator will error on it and that test will fail.
+ * metadata in lockstep. Validation does not read this set: `validateAst`
+ * delegates the allowlist to the library's `validateChart`.
  */
 export const UNIVERSAL_PROPERTIES: ReadonlySet<string> = new Set(Object.keys(UNIVERSAL_PROPERTY_META))
 

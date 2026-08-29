@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
+import { parse, validateChart } from '@blueprint-chart/lib'
 import { createServer } from '../server'
+import { listCanonicalChartTypes } from '../dsl/chartTypes'
+import type { DescribeChartTypeOutput } from './describeChartType'
 import { ValidateOutputSchema } from './validate'
 import { InspectOutputSchema } from './inspect'
 import { RecommendOutputSchema } from './recommend'
@@ -89,5 +92,15 @@ describe('output conformance: render and export_chart (custom formatters)', () =
     const r = await client.callTool({ name: 'export_chart', arguments: { source: BAR } })
     expect(() => ExportChartOutputSchema.parse(r.structuredContent)).not.toThrow()
     expect((r.structuredContent as Record<string, unknown>).png).toBeUndefined()
+  })
+})
+
+describe('guidance conformance: describe_chart_type property tables', () => {
+  it.each(listCanonicalChartTypes())('every property advertised for %s is one the library accepts', async (chartType) => {
+    const r = await client.callTool({ name: 'describe_chart_type', arguments: { chartType } })
+    const { properties } = r.structuredContent as unknown as DescribeChartTypeOutput
+    const body = properties.map(p => `  ${p.key} = "x"`).join('\n')
+    const errors = validateChart(parse(`chart ${chartType} {\n${body}\n  data { "A" = 1 }\n}`)).errors
+    expect(errors.filter(e => e.code === 'unknown-property').map(e => e.path)).toEqual([])
   })
 })

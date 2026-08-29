@@ -30,6 +30,19 @@ describe('validate_dsl', () => {
     }
   })
 
+  it('rejects axis and grid keys on a circular chart, as the library does', () => {
+    const r = validateDsl({ source: `chart donut {
+  valueLabels = true
+  verticalGridStyle = "dashed"
+  data { "A" = 1 }
+}` })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.valid).toBe(false)
+      expect(r.data.errors.map(e => e.path)).toEqual(['chart.valueLabels', 'chart.verticalGridStyle'])
+    }
+  })
+
   it('returns valid: false with E_UNKNOWN_CHART_TYPE on chart bar', () => {
     const r = validateDsl({ source: 'chart bar { data { "E" = 1 } }' })
     expect(r.ok).toBe(true)
