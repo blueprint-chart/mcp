@@ -2,6 +2,7 @@ import type { ChartNode } from '@blueprint-chart/lib'
 import { render } from '@blueprint-chart/lib'
 import { validatePipeline } from './validatePipeline'
 import { extractFrameMetadata, type FrameMetadata } from './frame'
+import { sceneCount, toLibSceneIndex } from './scenes'
 import { ErrorCode, toolError, type ToolErrorEntry, type ToolResult } from '../errors'
 
 /** Single source of truth for output dimensions (eng review D7). */
@@ -51,12 +52,12 @@ function checkComplexity(ast: ChartNode): ToolErrorEntry | undefined {
       suggestion: 'Aggregate or sample the data before charting.',
     }
   }
-  const sceneCount = ast.scenes?.length ?? 0
-  if (sceneCount > MAX_SCENES) {
+  const scenes = sceneCount(ast)
+  if (scenes > MAX_SCENES) {
     return {
       code: 'E_TOO_COMPLEX',
       path: 'scenes',
-      message: `chart has ${sceneCount} scenes; the render ceiling is ${MAX_SCENES}`,
+      message: `chart has ${scenes} scenes; the render ceiling is ${MAX_SCENES}`,
       suggestion: 'Split the story into multiple charts.',
     }
   }
@@ -79,13 +80,13 @@ export async function renderChart(source: string, opts: RenderChartOptions): Pro
     return { ok: false, error: toolError(ErrorCode.E_RENDER, [tooComplex]) }
   }
 
-  const frame = extractFrameMetadata(validated.ast)
+  const frame = extractFrameMetadata(validated.ast, opts.scene)
   const width = clampDimension(opts.width)
   const height = clampDimension(opts.height)
 
   let chart: Awaited<ReturnType<typeof render>>
   try {
-    chart = await render(source, { scene: opts.scene, width, height })
+    chart = await render(source, { scene: toLibSceneIndex(opts.scene), width, height })
   }
   catch (err) {
     return {

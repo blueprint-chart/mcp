@@ -345,3 +345,50 @@ describe('render png content blocks', () => {
     }
   })
 })
+
+describe('render — editor scene numbering', () => {
+  const SCENED = `chart bar-vertical {
+  title = "BASE"
+  data { "Qatar" = 1 "UAE" = 2 }
+  scene "Per capita" {
+    title = "Per capita"
+    data { "Qatar" = 40.13 "UAE" = 19.77 }
+  }
+}`
+
+  it('renders the base chart for scene 1 and reports its title', async () => {
+    const r = await renderTool({ source: SCENED, scene: 1, format: 'svg' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.frame.title).toBe('BASE')
+    }
+  })
+
+  it('renders the override for scene 2 and reports the scene title, not the base one', async () => {
+    const r = await renderTool({ source: SCENED, scene: 2, format: 'svg' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.frame.title).toBe('Per capita')
+      expect(r.data.svg).toContain('40.13')
+    }
+  })
+
+  it('rejects scene 0 and scene 3, naming the count the editor shows', async () => {
+    const below = await renderTool({ source: SCENED, scene: 0, format: 'svg' })
+    expect(below.ok).toBe(false)
+    const above = await renderTool({ source: SCENED, scene: 3, format: 'svg' })
+    expect(above.ok).toBe(false)
+    if (!above.ok) {
+      expect(above.errors[0]!.code).toBe('E_UNKNOWN_SCENE_INDEX')
+      expect(above.errors[0]!.message).toContain('2 scene(s)')
+    }
+  })
+
+  it('omitting scene renders the base chart', async () => {
+    const r = await renderTool({ source: SCENED, format: 'svg' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.frame.title).toBe('BASE')
+    }
+  })
+})

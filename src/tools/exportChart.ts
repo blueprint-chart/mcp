@@ -64,9 +64,9 @@ export async function exportChart(input: unknown): Promise<ToolResult<ExportChar
     frame: extractFrameMetadata(validated.ast),
   }
 
-  // Scene-0 frame when the chart has scenes; base state otherwise (an explicit
-  // index on a sceneless chart fails diagnose with E_UNKNOWN_SCENE_INDEX).
-  const previewScene = (validated.ast.scenes?.length ?? 0) > 0 ? 0 : undefined
+  // First override when the chart has scenes; base chart otherwise. Scene 1 is
+  // the base, so the first override is scene 2.
+  const previewScene = (validated.ast.scenes?.length ?? 0) > 0 ? 2 : undefined
 
   const publicBase = getPublicBaseUrl()
   if (publicBase) {

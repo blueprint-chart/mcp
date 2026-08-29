@@ -83,4 +83,33 @@ describe('inspect_dsl fixes', () => {
       expect(r.data.hasColorizes).toBe(true)
     }
   })
+
+  it('numbers scenes like the editor player, counting the base chart as scene 1', () => {
+    const src = 'chart bar-vertical {\n  title = "BASE"\n  data { "Qatar" = 1 }\n  scene "Per capita" {\n    title = "Per capita"\n  }\n}'
+    const r = inspectDsl({ source: src })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.scenes).toEqual([
+        { index: 1, hasTransition: false },
+        { index: 2, name: 'Per capita', hasTransition: false },
+      ])
+    }
+  })
+
+  it('reports a single scene for a chart with no scene blocks', () => {
+    const r = inspectDsl({ source: 'chart bar-vertical { data { "A" = 1 } }' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.scenes).toEqual([{ index: 1, hasTransition: false }])
+    }
+  })
+
+  it('reports the base scene transforms as its own', () => {
+    const src = 'chart bar-vertical {\n  data { "A" = 2 "B" = 1 }\n  transform sort { column = "value" direction = descending }\n}'
+    const r = inspectDsl({ source: src })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.scenes).toEqual([{ index: 1, hasTransition: true }])
+    }
+  })
 })

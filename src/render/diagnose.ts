@@ -2,6 +2,7 @@ import { parse, astToDefinition, resolveScene, getChart } from '@blueprint-chart
 import type { ChartNode } from '@blueprint-chart/lib'
 import { canonicalChartType, listCanonicalChartTypes } from '../dsl/chartTypes'
 import { nearestSuggestion } from '../dsl/suggest'
+import { sceneCount, toLibSceneIndex } from './scenes'
 
 export type RenderDiagnosticCode =
   | 'E_PARSE'
@@ -79,14 +80,14 @@ export function diagnoseRender(source: string, opts: DiagnoseOptions = {}): Diag
     })
   }
 
-  // Scene index out of range
-  const sceneCount = (ast.scenes ?? []).length
-  if (opts.sceneIndex !== undefined && opts.sceneIndex >= sceneCount) {
+  // Scene number out of range
+  const available = sceneCount(ast)
+  if (opts.sceneIndex !== undefined && (opts.sceneIndex < 1 || opts.sceneIndex > available)) {
     diagnostics.push({
       code: 'E_UNKNOWN_SCENE_INDEX',
       path: 'scene',
-      message: `Requested scene index ${opts.sceneIndex} but chart has ${sceneCount} scene(s).`,
-      context: { requested: opts.sceneIndex, availableSceneCount: sceneCount },
+      message: `Requested scene ${opts.sceneIndex} but chart has ${available} scene(s), numbered 1 to ${available}. Scene 1 is the base chart.`,
+      context: { requested: opts.sceneIndex, availableSceneCount: available },
     })
   }
 
@@ -124,7 +125,7 @@ export function diagnoseRender(source: string, opts: DiagnoseOptions = {}): Diag
 
   // Resolve scene (defensive — surfaces internal errors)
   try {
-    resolveScene(definition, opts.sceneIndex)
+    resolveScene(definition, toLibSceneIndex(opts.sceneIndex))
   }
   catch (err) {
     diagnostics.push({

@@ -22,7 +22,7 @@ export const RenderOutputSchema = z.object({
 export const RenderInputSchema = z.object({
   source: z.string().describe('The .bpc chart source to render.'),
   format: z.enum(['svg', 'png', 'html']).default('svg').describe('Output format. "svg" (default) and "html" return text; "png" returns an inline image you and the user can both see.'),
-  scene: z.number().int().nonnegative().optional().describe('Zero-based scene index to render, for charts that define scenes. Omit for the base chart (scene 0).'),
+  scene: z.number().int().min(1).optional().describe('Scene number to render, matching the editor player: scene 1 is the base chart and each `scene` block that follows is the next number. Omit for the base chart.'),
   width: z.number().int().positive().max(MAX_RENDER_DIMENSION).default(800).describe('Output width in pixels (max 1600). PNGs are rasterized at 2x for retina sharpness.'),
   height: z.number().int().positive().max(MAX_RENDER_DIMENSION).default(500).describe('Output height in pixels (max 1600).'),
   modelVisible: z.boolean().default(true).describe('When false, the inline PNG is omitted from the response so it costs no image tokens; use it for bulk renders, with `urls.png` or `save` to reach the image.'),

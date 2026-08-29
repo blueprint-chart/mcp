@@ -11,7 +11,7 @@ export const InspectInputSchema = z.object({
 export type InspectInput = z.infer<typeof InspectInputSchema>
 
 const SceneSummarySchema = z.object({
-  index: z.number().int().describe('Zero-based scene index.'),
+  index: z.number().int().describe('Scene number, matching the editor player: scene 1 is the base chart.'),
   name: z.string().optional().describe('Scene name, if named.'),
   hasTransition: z.boolean().describe('Whether the scene defines transforms.'),
 })
@@ -24,7 +24,7 @@ const DataSummarySchema = z.object({
 })
 export const InspectOutputSchema = z.object({
   chartType: z.string().describe('Declared chart type.'),
-  scenes: z.array(SceneSummarySchema).describe('Per-scene summaries (always at least one).'),
+  scenes: z.array(SceneSummarySchema).describe('Per-scene summaries, base chart first (always at least one).'),
   data: DataSummarySchema.describe('Summary of the data block.'),
   hasAnnotations: z.boolean().describe('Whether any annotation/range/note is present.'),
   hasColorizes: z.boolean().describe('Whether any non-highlight colorize is present.'),
@@ -59,15 +59,15 @@ export interface InspectOutput {
 }
 
 function summarizeScenes(ast: ChartNode): SceneSummary[] {
-  const scenes = (ast.scenes ?? []) as SceneNode[]
-  if (scenes.length === 0) {
-    return [{ index: 0, hasTransition: false }]
-  }
-  return scenes.map((scene, i) => ({
-    index: i,
-    name: scene.name ?? undefined,
-    hasTransition: (scene.transforms?.length ?? 0) > 0,
-  }))
+  const overrides = (ast.scenes ?? []) as SceneNode[]
+  return [
+    { index: 1, hasTransition: (ast.transforms?.length ?? 0) > 0 },
+    ...overrides.map((scene, i) => ({
+      index: i + 2,
+      name: scene.name ?? undefined,
+      hasTransition: (scene.transforms?.length ?? 0) > 0,
+    })),
+  ]
 }
 
 function summarizeData(ast: ChartNode): DataSummary {

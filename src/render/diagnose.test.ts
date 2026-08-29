@@ -28,14 +28,19 @@ describe('diagnoseRender', () => {
     }
   })
 
-  it('reports E_UNKNOWN_SCENE_INDEX when sceneIndex is out of range', () => {
+  it('reports E_UNKNOWN_SCENE_INDEX when the scene number is out of range', () => {
     const r = diagnoseRender('chart bar-vertical { data { "E" = 1 } }', { sceneIndex: 5 })
     expect(r.ok).toBe(false)
     if (!r.ok) {
       const issue = r.diagnostics.find(d => d.code === 'E_UNKNOWN_SCENE_INDEX')
       expect(issue).toBeDefined()
-      expect(issue!.context?.availableSceneCount).toBe(0)
+      expect(issue!.context?.availableSceneCount).toBe(1)
     }
+  })
+
+  it('accepts scene 1 on a chart with no scene blocks', () => {
+    const r = diagnoseRender('chart bar-vertical { data { "E" = 1 } }', { sceneIndex: 1 })
+    expect(r.ok).toBe(true)
   })
 
   it('reports E_UNRESOLVED_COLORIZE when colorize target is not a label', () => {
