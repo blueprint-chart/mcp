@@ -130,7 +130,7 @@ export const TOOLS: Record<string, ToolDef> = {
     handler: args => getGrammar(args),
   },
   export_chart: {
-    description: 'Turn a validated .bpc source into shareable URLs plus an inline visual preview of what was published. Returns { copyUrl, embedUrl, urls?, frame } and a scene-0 PNG image block so you can confirm the chart looks right before sharing. copyUrl opens an editable copy in the editor; embedUrl is a read-only iframe target; urls.{png,svg,bpc} (when MCP_PUBLIC_URL is set) are stateless rendered-image/source links. Set modelVisible:false to drop the inline preview from the response entirely, spending no image tokens. Requires BLUEPRINT_CHART_EDITOR_URL; preview failures never block the export.',
+    description: 'Turn a validated .bpc source into shareable URLs plus an inline visual preview of what was published. Returns { copyUrl, embedUrl, urls?, frame } and a PNG preview image block so you can confirm the chart looks right before sharing. copyUrl opens an editable copy in the editor; embedUrl is a read-only iframe target; urls.{png,svg,bpc} (when MCP_PUBLIC_URL is set) are stateless rendered-image/source links. Set modelVisible:false to drop the inline preview from the response entirely, spending no image tokens. Requires BLUEPRINT_CHART_EDITOR_URL; preview failures never block the export.',
     inputSchema: ExportChartInputSchema,
     outputSchema: ExportChartOutputSchema,
     handler: args => exportChart(args),

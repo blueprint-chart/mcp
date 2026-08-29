@@ -13,7 +13,7 @@ export const ExportChartOutputSchema = z.object({
   embedUrl: z.string().describe('Read-only iframe-embeddable URL.'),
   frame: FrameMetadataSchema.describe('Frame metadata extracted from the chart.'),
   urls: RenderUrlsSchema.optional().describe('Stateless hosted render URLs (only when MCP_PUBLIC_URL is set).'),
-  previewOmitted: z.literal(true).optional().describe('Set when the scene-0 preview render failed.'),
+  previewOmitted: z.literal(true).optional().describe('Set when the preview render failed.'),
 })
 
 const PREVIEW_WIDTH = 800
@@ -29,7 +29,7 @@ export interface ExportChartOutput {
   copyUrl: string
   embedUrl: string
   frame: FrameMetadata
-  /** Scene-0 PNG preview (base64) — omitted if the preview render failed. */
+  /** PNG preview (base64) - omitted if the preview render failed. */
   png?: string
   previewOmitted?: true
   urls?: RenderUrls
