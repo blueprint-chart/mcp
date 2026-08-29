@@ -1,7 +1,6 @@
 import type { ChartNode } from '@blueprint-chart/lib'
-import { getChartOptions } from '@blueprint-chart/lib'
-import { canonicalChartType, isKnownChartType, listCanonicalChartTypes } from './chartTypes'
-import { UNIVERSAL_PROPERTIES } from './universalProperties'
+import { validateChart } from '@blueprint-chart/lib'
+import { isKnownChartType, listCanonicalChartTypes } from './chartTypes'
 import { nearestSuggestion } from './suggest'
 import { looksLikeUnquotedKey } from './dataKey'
 
@@ -21,12 +20,6 @@ export interface ValidationIssue {
   context?: Record<string, unknown>
 }
 
-function chartLevelKnownKeys(chartType: string): string[] {
-  const canonical = canonicalChartType(chartType) ?? chartType
-  const perType = getChartOptions(canonical).map(o => o.key)
-  return [...UNIVERSAL_PROPERTIES, ...perType]
-}
-
 export function validateAst(ast: ChartNode): ValidationIssue[] {
   const issues: ValidationIssue[] = []
 
@@ -43,20 +36,22 @@ export function validateAst(ast: ChartNode): ValidationIssue[] {
     })
   }
 
-  // Chart-level property keys (only meaningful when the chart type is known)
+  // Property keys (only meaningful when the chart type is known). The library
+  // owns the allowlist: its per-type option defs plus the frame keys it reads
+  // directly. Mirroring that set here is what let the MCP reject valid keys
+  // and accept keys the library does not have.
   if (chartTypeKnown) {
-    const known = chartLevelKnownKeys(chartType)
-    const knownSet = new Set(known)
-    for (const prop of ast.properties ?? []) {
-      if (!knownSet.has(prop.key)) {
-        issues.push({
-          code: 'E_UNKNOWN_PROPERTY',
-          path: `chart.${prop.key}`,
-          message: `Unknown property "${prop.key}" on chart ${chartType}.`,
-          suggestion: nearestSuggestion(prop.key, known),
-          context: { got: prop.key, chartType },
-        })
+    for (const issue of validateChart(ast).errors) {
+      if (issue.code !== 'unknown-property') {
+        continue
       }
+      issues.push({
+        code: 'E_UNKNOWN_PROPERTY',
+        path: issue.path,
+        ...(issue.suggestion !== undefined && { suggestion: issue.suggestion }),
+        message: issue.message,
+        context: { got: issue.path.slice(issue.path.lastIndexOf('.') + 1), chartType },
+      })
     }
   }
 

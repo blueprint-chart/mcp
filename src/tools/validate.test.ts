@@ -15,6 +15,21 @@ describe('validate_dsl', () => {
     }
   })
 
+  it('accepts the brand look the editor and docs emit', () => {
+    const r = validateDsl({ source: `chart bar-vertical {
+  theme = "blueprint-bold"
+  colorPalette = "BlueprintBold"
+  transparentBackground = true
+  fixedHeight = 400
+  data { "A" = 1 }
+}` })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.errors).toEqual([])
+      expect(r.data.valid).toBe(true)
+    }
+  })
+
   it('returns valid: false with E_UNKNOWN_CHART_TYPE on chart bar', () => {
     const r = validateDsl({ source: 'chart bar { data { "E" = 1 } }' })
     expect(r.ok).toBe(true)

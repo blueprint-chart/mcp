@@ -43,11 +43,19 @@ describe('recommend_chart_type', () => {
     }
   })
 
-  it('surfaces bar-split for a range goal (was impossible before)', () => {
-    const r = recommendChartType({ columnTypes: ['string', 'number'], rowCount: 6, goal: 'the lead with its margin of error' })
+  it('surfaces bar-split for a range goal over a low/high column pair', () => {
+    const r = recommendChartType({ columnTypes: ['string', 'number', 'number'], rowCount: 6, goal: 'the lead with its margin of error' })
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.data.recommendations[0]?.chartType).toBe('bar-split')
+    }
+  })
+
+  it('keeps bar-split off a range goal that has only one numeric column', () => {
+    const r = recommendChartType({ columnTypes: ['string', 'number'], rowCount: 6, goal: 'the lead with its margin of error' })
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.recommendations.map(x => x.chartType)).not.toContain('bar-split')
     }
   })
 
